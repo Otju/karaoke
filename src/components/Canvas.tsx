@@ -3,14 +3,68 @@ import { useState } from 'react'
 import Wad from 'web-audio-daw'
 import songData from '../data/Mamma-Mia.json'
 import YouTube from 'react-youtube'
+import useWindowDimensions from '../hooks/useWindowDimensions'
+import { IoPauseSharp, IoPlaySharp, IoPlaySkipForwardSharp } from 'react-icons/io5'
 
 const voice = new Wad({ source: 'mic' })
 const tuner = new Wad.Poly()
 
-const canvasheight = 400
-const canvaswidth = 1000
-
 const { bpm, notePages, gap } = songData
+
+interface RadiusInput {
+  tl?: number
+  tr?: number
+  br?: number
+  bl?: number
+}
+
+interface Radius {
+  tl: number
+  tr: number
+  br: number
+  bl: number
+}
+
+type RadiusField = 'tl' | 'tr' | 'br' | 'bl'
+
+const roundRect = (
+  ctx: any,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number | RadiusInput,
+  fill = true,
+  stroke = true
+) => {
+  if (typeof radius === 'number') {
+    radius = { tl: radius, tr: radius, br: radius, bl: radius }
+  } else {
+    const defaultRadius = { tl: 0, tr: 0, br: 0, bl: 0 }
+    for (const side in defaultRadius) {
+      const sideAsType = side as RadiusField
+      radius[sideAsType] = radius[sideAsType] || defaultRadius[sideAsType]
+    }
+  }
+  const rad = radius as Radius
+  ctx.beginPath()
+  ctx.moveTo(x + rad.tl, y)
+  ctx.lineTo(x + width - rad.tr, y)
+  ctx.quadraticCurveTo(x + width, y, x + width, y + rad.tr)
+  ctx.lineTo(x + width, y + height - rad.br)
+  ctx.quadraticCurveTo(x + width, y + height, x + width - rad.br, y + height)
+  ctx.lineTo(x + rad.bl, y + height)
+  ctx.quadraticCurveTo(x, y + height, x, y + height - rad.bl)
+  ctx.lineTo(x, y + rad.tl)
+  ctx.quadraticCurveTo(x, y, x + rad.tl, y)
+  ctx.closePath()
+  if (fill) {
+    ctx.fill()
+  }
+  if (stroke) {
+    ctx.stroke()
+  }
+}
 
 const closestIndex = (num: number, arr: number[]) => {
   let curr = arr[0],
@@ -30,6 +84,7 @@ const closestIndex = (num: number, arr: number[]) => {
 tuner.setVolume(0)
 tuner.add(voice)
 
+/*
 const pitchToY = (pitch: number, octaveNotes?: number[]) => {
   if (!octaveNotes) {
     return 0
@@ -38,6 +93,7 @@ const pitchToY = (pitch: number, octaveNotes?: number[]) => {
   const y = canvasheight - canvasheight * (noteNumber / 24)
   return y
 }
+*/
 
 interface Octave {
   min: number
@@ -86,14 +142,24 @@ for (let i = -3; i <= 2; i++) {
   octaves.push({ min, max, octave, trueMax, octaveNotes })
 }
 
+interface Dimensions {
+  height: number
+  width: number
+}
+
 const drawPitch = (
   ctx: any,
   pitch: number,
   currentBeat: number,
   currentOctave: Octave | undefined,
   setCurrentOctave: Function,
-  sungNotes: SungNote[]
+  sungNotes: SungNote[],
+  setSungNotes: Function,
+  pageSize: Dimensions
 ) => {
+  const canvasheight = pageSize.height
+  const canvaswidth = pageSize.width
+
   const currentNotePageIndex = notePages.findIndex(
     ({ startBeat, endBeat }) => currentBeat >= startBeat - 20 && currentBeat <= endBeat
   )
@@ -103,36 +169,20 @@ const drawPitch = (
     .join('')
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   if (currentNotePage) {
-    ctx.font = '24px Arial'
+    ctx.font = '32px Arial'
     const { startBeat } = currentNotePage
-    let y = pitchToY(
-      pitch,
-      currentOctave?.octaveNotes.map(({ freq }) => freq)
-    )
     ctx.beginPath()
     const lineX = (currentBeat - startBeat) * 20
     ctx.moveTo(lineX, 0)
     ctx.lineTo(lineX, canvasheight)
     ctx.stroke()
     ctx.beginPath()
-    ctx.arc((currentBeat - startBeat) * 20, y, 10, 0, Math.PI * 2, false)
     ctx.fillStyle = 'black'
     ctx.fill()
-    /*
-    currentOctave?.octaveNotes.forEach(({ name, freq }) => {
-      const y = pitchToY(
-        freq,
-        currentOctave?.octaveNotes.map(({ freq }) => freq)
-      )
-      ctx.fillText(name, 20, y)
-    })
-    */
     let notFilledLyrics = ''
     let filledLyrics = ''
-    //let partlyFilledLyrics = ''
-    //let gradient
 
-    currentNotePage.notes.forEach(({ beat, length, note, lyric, noteName, isSecondOctave }) => {
+    currentNotePage.notes.forEach(({ beat, length, note, lyric, isSecondOctave }) => {
       const calcOctave = () => {
         const isActive = beat <= currentBeat && beat + length >= currentBeat
         if (isActive) {
@@ -151,29 +201,10 @@ const drawPitch = (
       const relativeBeat = beat - startBeat
       const x = relativeBeat * 20
       const y = canvasheight - canvasheight * (note / 24)
-      //const isCurrentBeat = beat <= currentBeat && beat + length >= currentBeat
-      ctx.fillStyle = '#FF0000' //isCurrentBeat ? 'green' :
-      ctx.fillRect(x, y, length * 20, 30)
-      ctx.fillText(`${noteName}${isSecondOctave ? '2' : ''}`, x, y)
+      ctx.fillStyle = '#FF0000'
+      roundRect(ctx, x, y, length * 20, 30, 5, true, false)
       if (currentBeat >= beat) {
-        //const endBeatOfNote = beat + length
-        //if (currentBeat >= endBeatOfNote) {
         filledLyrics += lyric
-        //} else {
-        /*
-          const percentageComplete = (currentBeat - beat) / (endBeatOfNote - beat)
-          partlyFilledLyrics += lyric
-          gradient = ctx.createLinearGradient(
-            ctx.measureText(partlyFilledLyrics).width * percentageComplete,
-            0,
-            ctx.measureText(partlyFilledLyrics).width * percentageComplete * 2,
-            0
-          )
-          gradient.addColorStop(0, 'red')
-          gradient.addColorStop(1, 'black')
-          console.log(partlyFilledLyrics, percentageComplete)
-          */
-        //}
       } else {
         notFilledLyrics += lyric
       }
@@ -187,32 +218,40 @@ const drawPitch = (
 
     const nextPageLyricsX = centerOfCanvas - ctx.measureText(nextPageLyrics).width / 2
 
-    ctx.fillStyle = '#FF0000'
-    ctx.fillText(filledLyrics, textX, 400)
-    //ctx.fillStyle = gradient
-    //ctx.fillText(partlyFilledLyrics, 20 + filledLength, 400)
-    ctx.fillStyle = '#000000'
-    ctx.fillText(
-      notFilledLyrics,
-      textX + /*tx.measureText(partlyFilledLyrics).width*/ +filledLength,
-      400
-    )
-    ctx.fillText(nextPageLyrics, nextPageLyricsX, 440)
+    ctx.fillStyle = 'red'
+    ctx.fillText(filledLyrics, textX, canvasheight - 60)
+    ctx.fillStyle = 'white'
+    ctx.fillText(notFilledLyrics, textX + filledLength, canvasheight - 60)
+    ctx.fillText(nextPageLyrics, nextPageLyricsX, canvasheight - 20)
 
     sungNotes.forEach(({ wholeBeat, name, pitch }) => {
+      if (wholeBeat === currentNotePage.startBeat - 1) {
+        setSungNotes([])
+      }
       const currentNote = currentNotePage.notes.find(
         ({ beat, length }) => wholeBeat >= beat && wholeBeat < beat + length
       )
       if (currentNote && name && currentOctave) {
         let index = currentNote.note - 1
-        const currentNotePitch = currentOctave?.octaveNotes[index]?.freq
-        const isRightPitch = pitch < currentNotePitch * 1.05 && pitch > currentNotePitch * 0.95
-        if (isRightPitch) {
-          const relativeBeat = wholeBeat - startBeat
-          const x = relativeBeat * 20
-          const y = canvasheight - canvasheight * (currentNote.note / 24)
-          ctx.fillStyle = 'blue'
-          ctx.fillRect(x, y, 20, 30)
+        const closestNoteToSungNoteIndex = closestIndex(
+          pitch,
+          currentOctave.octaveNotes.map(({ freq }) => freq)
+        )
+        const isRightNote = closestNoteToSungNoteIndex === index
+        const relativeBeat = wholeBeat - startBeat
+        const x = relativeBeat * 20
+        const y = canvasheight - canvasheight * ((closestNoteToSungNoteIndex + 1) / 24)
+        ctx.fillStyle = isRightNote ? 'blue' : 'rgba(0, 0, 255, 0.3)'
+        const width = isRightNote ? 30 : 20
+        const { beat, length } = currentNote
+        if (wholeBeat === beat) {
+          //Start of note
+          roundRect(ctx, x, y, 20, width, { tl: 5, bl: 5 }, true, false)
+        } else if (wholeBeat === beat + length - 1) {
+          //End of note
+          roundRect(ctx, x, y, 20, width, { tr: 5, br: 5 }, true, false)
+        } else {
+          ctx.fillRect(x, y, 20, width)
         }
       }
     })
@@ -241,6 +280,8 @@ const Canvas = (props: any) => {
   const [currentOctave, setCurrentOctave] = useState<Octave | undefined>()
   const [sungNotes, setSungNotes] = useState<SungNote[]>([])
   const [currentWholeBeat, setCurrentWholeBeat] = useState<number>(0)
+
+  const { height, width } = useWindowDimensions()
 
   const handleReady = (event: any) => {
     setPlayer(event.target)
@@ -289,8 +330,17 @@ const Canvas = (props: any) => {
     const canvas = canvasRef.current
     //@ts-ignore
     const ctx = canvas.getContext('2d')
-    drawPitch(ctx, note.pitch, note.currentBeat, currentOctave, setCurrentOctave, sungNotes)
-  }, [note, currentOctave, sungNotes])
+    drawPitch(
+      ctx,
+      note.pitch,
+      note.currentBeat,
+      currentOctave,
+      setCurrentOctave,
+      sungNotes,
+      setSungNotes,
+      { width: width / 2, height }
+    )
+  }, [note, currentOctave, sungNotes, width, height])
 
   useEffect(() => {
     setSungNotes((notes) => [
@@ -324,12 +374,14 @@ const Canvas = (props: any) => {
 
   return (
     <div>
-      <div style={{ position: 'relative' }}>
+      <div>
         <div style={{ pointerEvents: 'none', visibility: stopped ? 'hidden' : 'visible' }}>
           <YouTube
             videoId={'unfzfe8f9NI'}
             onReady={handleReady}
             opts={{
+              height: height.toString(),
+              width: width.toString(),
               playerVars: {
                 controls: 0,
                 disablekb: 1,
@@ -343,33 +395,27 @@ const Canvas = (props: any) => {
             onPause={stop}
           />
         </div>
-        {stopped && (
-          <h1
-            style={{
-              position: 'absolute',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              top: '45%',
-            }}
-          >
-            PAUSED
-          </h1>
-        )}
+        {stopped && <h1 className="absCenter">PAUSED</h1>}
       </div>
-      {player && (
-        <div>
-          <button onClick={handlePlay}>Start</button>
-          <button onClick={handlePause}>Stop</button>
-          <button onClick={handleSkip}>Skip to start</button>
-        </div>
-      )}
-      {note.pitch ? (
-        <h2>
-          {note.pitch}:{note.name}
-          <button onClick={() => setCurrentOctave(undefined)}>C{currentOctave?.octave}</button>
-        </h2>
-      ) : null}
-      <canvas ref={canvasRef} {...props} width={canvaswidth} height={canvasheight} />
+      <div className="playControls" style={{ zIndex: 500 }}>
+        {player && (
+          <div>
+            <button onClick={() => (stopped ? handlePlay() : handlePause())}>
+              {stopped ? <IoPlaySharp size={30} /> : <IoPauseSharp size={30} />}
+            </button>
+            <button onClick={handleSkip}>
+              <IoPlaySkipForwardSharp size={30} />
+            </button>
+          </div>
+        )}
+        <button onClick={() => setCurrentOctave(undefined)}>
+          Low C: {currentOctave ? `C${currentOctave.octave}` : '?'}
+        </button>
+      </div>
+      <div className="absCenter" style={{ zIndex: 400 }}>
+        <canvas ref={canvasRef} {...props} width={width / 2} height={height} />
+      </div>
+      <div className="vocalBackground"></div>
     </div>
   )
 }
