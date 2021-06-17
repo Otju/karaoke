@@ -34,7 +34,8 @@ const parseFile = (fileName) => {
   let currentNotes = []
   textByLine.map((text) => {
     if (/[:*F] \d+ \d+ \d+ .+/gm.test(text)) {
-      const parts = text.split(' ')
+      const hasSpace = text.includes('  ')
+      const parts = text.split(/\s+/gm)
       let type
       if (parts[0] === ':') {
         type = 'normal'
@@ -46,10 +47,11 @@ const parseFile = (fileName) => {
       const beat = Number(parts[1])
       const length = Number(parts[2])
       const note = Number(parts[3])
+      const isSecondOctave = Boolean(note > 12)
       const noteToMax12 = note > 12 ? note - 12 : note
       const noteName = noteNames[noteToMax12 - 1]
-      const lyric = parts.slice(4).join('')
-      currentNotes.push({ type, beat, length, note, lyric, noteName })
+      const lyric = (hasSpace ? ' ' : '') + parts[4]
+      currentNotes.push({ type, beat, length, note, lyric, noteName, isSecondOctave })
     } else if (/- \d+/gm.test(text)) {
       const parts = text.split(' ')
       const beat = Number(parts[1])
@@ -61,7 +63,7 @@ const parseFile = (fileName) => {
 
   songInfo.notePages = notePages
 
-  //fs.writeFileSync(`./parsed/${fileName}.json`, JSON.stringify(songInfo))
+  fs.writeFileSync(`./parsed/${fileName}.json`, JSON.stringify(songInfo))
   fs.writeFileSync(`../src/data/${fileName}.json`, JSON.stringify(songInfo))
 }
 
