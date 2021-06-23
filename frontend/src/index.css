@@ -1,0 +1,141 @@
+:root {
+  --pc: black;
+  --sc: red;
+  --bc: rgb(34, 32, 32);
+  --txtpc: white;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bc);
+}
+
+.App {
+  text-align: center;
+  color: var(--txtpc);
+}
+
+.absCenter {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  top: 45%;
+}
+
+.absCenterX {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  top: 0%;
+}
+
+.vocalBackground {
+  width: 100%;
+  height: 20%;
+  background-color: rgba(0, 0, 0, 0.8);
+  position: absolute;
+  bottom: 0;
+}
+
+button {
+  background-color: rgba(255, 0, 0, 0.8);
+  color: white;
+  border: none;
+  padding: 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 10%;
+}
+
+.playControls {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  top: 5%;
+}
+
+.leftSide {
+  position: absolute;
+  left: 20px;
+}
+
+.firstTop {
+  top: 20px;
+}
+
+.secondTop {
+  top: 120px;
+}
+
+ul {
+  list-style: none;
+  padding: 20px;
+  width: 70%;
+}
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+li {
+  padding: 10px;
+  background-color: var(--bc);
+  color: var(--txtpc);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-basis: 0;
+  flex-grow: 1;
+}
+li:hover {
+  filter: brightness(2);
+}
+
+.dangerColor {
+  color: var(--sc);
+}
+
+.tooltip {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 100%;
+  width: 100px;
+  left: 50%;
+  margin-left: -50px;
+  font-size: 14px;
+}
+
+.tooltipContainer:hover .tooltip {
+  visibility: visible;
+}
+
+.noYt {
+  display: inline-block;
+  position: relative;
+}
+
+.centerX {
+  display: flex;
+  justify-content: center;
+}
+
+.col3 {
+  width: 32%;
+  text-align: start;
+}
