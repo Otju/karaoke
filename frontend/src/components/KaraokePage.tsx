@@ -1,6 +1,7 @@
 import { useQuery } from 'urql'
 import { useParams, useHistory } from 'react-router-dom'
 import { SongQuery } from '../graphql/queries'
+import { getWindowDimensions } from '../hooks/useWindowDimensions'
 
 import Canvas from './Canvas'
 
@@ -28,7 +29,11 @@ const KaraokePage = ({ voice, tuner }: props) => {
     return <span>No song selected</span>
   }
 
-  return <Canvas voice={voice} tuner={tuner} songInfo={data.getSong} />
+  const { width, height } = getWindowDimensions()
+
+  return (
+    <Canvas voice={voice} tuner={tuner} songInfo={data.getSong} width={width} height={height} />
+  )
 }
 
 export default KaraokePage

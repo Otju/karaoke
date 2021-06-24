@@ -1,7 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { useState } from 'react'
 import YouTube from 'react-youtube'
-import useWindowDimensions from '../hooks/useWindowDimensions'
 import {
   IoPauseSharp,
   IoPlaySharp,
@@ -13,24 +12,16 @@ import { Note, Octave, Song, SungNote } from '../types/types'
 import drawPitch from '../utils/drawPitch'
 import { Link } from 'react-router-dom'
 
-/*
-const pitchToY = (pitch: number, octaveNotes?: number[]) => {
-  if (!octaveNotes) {
-    return 0
-  }
-  const noteNumber = closestIndex(pitch, octaveNotes) + 1
-  const y = canvasheight - canvasheight * (noteNumber / 24)
-  return y
-}
-*/
-
 interface props {
   voice: any
   tuner: any
   songInfo: Song
+  lyricPlayMode?: boolean
+  width: number
+  height: number
 }
 
-const Canvas = ({ voice, tuner, songInfo }: props) => {
+const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height }: props) => {
   const [note, setNote] = useState<Note>({ pitch: 0, name: '', currentBeat: -40 })
   const [animationId, setAnimationId] = useState(0)
   const [savedStartTime, setSavedStartTime] = useState<number | null>(null)
@@ -40,9 +31,6 @@ const Canvas = ({ voice, tuner, songInfo }: props) => {
   const [currentOctave, setCurrentOctave] = useState<Octave | undefined>()
   const [sungNotes, setSungNotes] = useState<SungNote[]>([])
   const [currentWholeBeat, setCurrentWholeBeat] = useState<number>(0)
-  const [customVideoId, setCustomVideoId] = useState('')
-
-  const { height, width } = useWindowDimensions()
 
   const canvasRef = useRef(null)
 
@@ -78,8 +66,10 @@ const Canvas = ({ voice, tuner, songInfo }: props) => {
   }
 
   const start = () => {
-    voice.play()
-    tuner.updatePitch()
+    if (!lyricPlayMode) {
+      voice.play()
+      tuner.updatePitch()
+    }
     const timeNow = document.timeline.currentTime
     if (pauseTime && timeNow) {
       if (savedStartTime) {
@@ -101,7 +91,21 @@ const Canvas = ({ voice, tuner, songInfo }: props) => {
       if (newWholeBeat !== currentWholeBeat) {
         setCurrentWholeBeat(newWholeBeat)
       }
-      const newNote = { pitch: tuner.pitch, name: tuner.noteName, currentBeat }
+      let newNote
+      if (!lyricPlayMode) {
+        newNote = { pitch: tuner.pitch, name: tuner.noteName, currentBeat }
+      } else {
+        const currentNotePage = notePages.find(
+          ({ startBeat, endBeat }) => currentBeat >= startBeat - 20 && currentBeat <= endBeat
+        )
+        const currentNote = currentNotePage?.notes.find(
+          ({ beat, length }) => beat - 1 <= currentBeat && beat + length >= currentBeat
+        )
+        const note = currentNote?.note && currentOctave?.octaveNotes[currentNote?.note]
+        newNote = note
+          ? { pitch: note.freq, name: note.name, currentBeat }
+          : { pitch: 440, name: 'A', currentBeat }
+      }
       setNote(newNote)
       setAnimationId(requestAnimationFrame((callback) => render(callback, startTime)))
     }
@@ -110,7 +114,9 @@ const Canvas = ({ voice, tuner, songInfo }: props) => {
   const stop = () => {
     const timeNow = document.timeline.currentTime
     setPauseTime(timeNow)
-    tuner.stopUpdatingPitch()
+    if (!lyricPlayMode) {
+      tuner.stopUpdatingPitch()
+    }
     cancelAnimationFrame(animationId)
   }
 
@@ -136,12 +142,17 @@ const Canvas = ({ voice, tuner, songInfo }: props) => {
     player.playVideo()
   }
 
+  const handlePlayAndSkip = () => {
+    handlePlay()
+    handleSkip()
+  }
+
   return (
-    <div>
+    <div style={{ width, height }} className="canvasContainer">
       <div>
         <div style={{ pointerEvents: 'none', visibility: stopped ? 'hidden' : 'visible' }}>
           <YouTube
-            videoId={videoId || customVideoId}
+            videoId={videoId}
             onReady={handleReady}
             opts={{
               height: height.toString(),
@@ -161,37 +172,49 @@ const Canvas = ({ voice, tuner, songInfo }: props) => {
         </div>
         {stopped && <h1 className="absCenter">PAUSED</h1>}
       </div>
-      <div className="playControls" style={{ zIndex: 500 }}>
-        <input
-          type="text"
-          onChange={(e) => setCustomVideoId(e.target.value)}
-          value={customVideoId}
-        />
-        {player && (
-          <div>
-            <button onClick={() => (stopped ? handlePlay() : handlePause())}>
-              {stopped ? <IoPlaySharp size={30} /> : <IoPauseSharp size={30} />}
-            </button>
-            <button onClick={handleSkip}>
-              <IoPlaySkipForwardSharp size={30} />
-            </button>
-          </div>
-        )}
-        <button onClick={() => setCurrentOctave(undefined)}>
-          Low C: {currentOctave ? `C${currentOctave.octave}` : '?'}
-        </button>
-      </div>
+      {
+        <div className="playControls" style={{ zIndex: 500 }}>
+          {player &&
+            (lyricPlayMode ? (
+              <>
+                <button
+                  className="bigButton"
+                  onClick={() => (stopped ? handlePlayAndSkip() : handlePause())}
+                >
+                  {stopped ? <IoPlaySharp size={30} /> : <IoPauseSharp size={30} />}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="bigButton"
+                  onClick={() => (stopped ? handlePlay() : handlePause())}
+                >
+                  {stopped ? <IoPlaySharp size={30} /> : <IoPauseSharp size={30} />}
+                </button>
+                <button className="bigButton" onClick={handleSkip}>
+                  <IoPlaySkipForwardSharp size={30} />
+                </button>
+                <div>
+                  <button className="bigButton">
+                    Low C: {currentOctave ? `C${currentOctave.octave}` : '?'}
+                  </button>
+                </div>
+              </>
+            ))}
+        </div>
+      }
       <div className="absCenter" style={{ zIndex: 400 }}>
         <canvas ref={canvasRef} width={width / 2} height={height} />
       </div>
       <div className="vocalBackground"></div>
       <Link to="/" className="leftSide firstTop">
-        <button>
+        <button className="bigButton">
           <IoArrowBackSharp size={30} />
         </button>
       </Link>
       <Link to={`/tweak/${songInfo._id}`} className="leftSide secondTop">
-        <button>
+        <button className="bigButton">
           <IoSettingsSharp size={30} />
         </button>
       </Link>

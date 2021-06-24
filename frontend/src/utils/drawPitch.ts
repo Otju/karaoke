@@ -4,6 +4,30 @@ import { roundRect, closestIndex } from './canvasHelpers'
 
 const octaves = getOctaves()
 
+interface CalcBeatLength {
+  canvaswidth: number
+  startBeat: number
+  endBeat: number
+  beatMargin: number
+}
+
+interface BeatToX {
+  relativeBeat: number
+  beatLength: number
+  beatMargin: number
+}
+
+const calcbeatLength = ({ canvaswidth, startBeat, endBeat, beatMargin }: CalcBeatLength) => {
+  const beatAmount = endBeat - startBeat
+  const beatLength = (canvaswidth - beatMargin * 2) / beatAmount
+  return beatLength
+}
+
+const beatToX = ({ relativeBeat, beatLength, beatMargin }: BeatToX) => {
+  const x = beatMargin + relativeBeat * beatLength
+  return x
+}
+
 const drawPitch = (
   ctx: any,
   pitch: number,
@@ -27,20 +51,17 @@ const drawPitch = (
     .join('')
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   if (currentNotePage) {
+    const { startBeat, endBeat } = currentNotePage
+    const beatMargin = 20
+    const beatLength = calcbeatLength({ canvaswidth, startBeat, endBeat, beatMargin })
     ctx.font = '32px Arial'
-    const { startBeat } = currentNotePage
-    ctx.beginPath()
-    const lineX = (currentBeat - startBeat) * 20
-    ctx.moveTo(lineX, 0)
-    ctx.lineTo(lineX, canvasheight)
-    ctx.stroke()
     ctx.beginPath()
     ctx.fillStyle = 'black'
     ctx.fill()
     let notFilledLyrics = ''
     let filledLyrics = ''
 
-    if(Math.floor(currentBeat)===startBeat-1){
+    if (Math.floor(currentBeat) === startBeat - 1) {
       setCurrentOctave(null)
     }
 
@@ -61,10 +82,10 @@ const drawPitch = (
       }
       if (!currentOctave) calcOctave()
       const relativeBeat = beat - startBeat
-      const x = relativeBeat * 20
-      const y = canvasheight - canvasheight * (note / 24)
-      ctx.fillStyle = '#FF0000'
-      roundRect(ctx, x, y, length * 20, 30, 5, true, false)
+      const x = beatToX({ relativeBeat, beatLength, beatMargin })
+      const y = canvasheight - canvasheight * ((note + 1) / 24)
+      ctx.fillStyle = 'grey'
+      roundRect(ctx, x, y, length * beatLength, 30, 5, true, false)
       if (currentBeat >= beat) {
         filledLyrics += lyric
       } else {
@@ -94,26 +115,26 @@ const drawPitch = (
         ({ beat, length }) => wholeBeat >= beat && wholeBeat < beat + length
       )
       if (currentNote && name && currentOctave) {
-        let index = currentNote.note - 1
+        let index = currentNote.note
         const closestNoteToSungNoteIndex = closestIndex(
           pitch,
           currentOctave.octaveNotes.map(({ freq }) => freq)
         )
         const isRightNote = closestNoteToSungNoteIndex === index
         const relativeBeat = wholeBeat - startBeat
-        const x = relativeBeat * 20
+        const x = beatToX({ relativeBeat, beatLength, beatMargin })
         const y = canvasheight - canvasheight * ((closestNoteToSungNoteIndex + 1) / 24)
         ctx.fillStyle = isRightNote ? 'blue' : 'rgba(0, 0, 255, 0.3)'
         const width = isRightNote ? 30 : 20
         const { beat, length } = currentNote
         if (wholeBeat === beat) {
           //Start of note
-          roundRect(ctx, x, y, 20, width, { tl: 5, bl: 5 }, true, false)
+          roundRect(ctx, x, y, beatLength, width, { tl: 5, bl: 5 }, true, false)
         } else if (wholeBeat === beat + length - 1) {
           //End of note
-          roundRect(ctx, x, y, 20, width, { tr: 5, br: 5 }, true, false)
+          roundRect(ctx, x, y, beatLength, width, { tr: 5, br: 5 }, true, false)
         } else {
-          ctx.fillRect(x, y, 20, width)
+          ctx.fillRect(x, y, beatLength, width)
         }
       }
     })

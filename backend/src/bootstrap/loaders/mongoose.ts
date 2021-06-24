@@ -11,6 +11,8 @@ process.on('SIGINT', async () => {
 export const mongoDBConfig = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  useFindAndModify: false,
+  useCreateIndex: true,
 }
 
 // Your Mongoose setup goes here

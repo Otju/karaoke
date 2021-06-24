@@ -6,6 +6,8 @@ import { Song } from '../types/types'
 import React, { useState } from 'react'
 import YouTube from 'react-youtube'
 import { useEffect } from 'react'
+import Canvas from './Canvas'
+import SkipButton from './SkipButton'
 
 const SongTweak = () => {
   const [videoIdField, setVideoIdField] = useState('')
@@ -14,10 +16,9 @@ const SongTweak = () => {
 
   const [parsedID, setParsedID] = useState('')
   const [startTime, setStartTime] = useState<number | null>(null)
+  const [oldStartTime, setOldStartTime] = useState<number | null>(null)
 
-  const [updateTodoResult, updateVideoInfo] = useMutation(UpdateVideoInfo)
-
-  console.log(updateTodoResult)
+  const [, updateVideoInfo] = useMutation(UpdateVideoInfo)
 
   const { id } = useParams<{ id: string }>()
   const history = useHistory()
@@ -39,6 +40,13 @@ const SongTweak = () => {
       }
     }
   }, [data])
+
+  useEffect(() => {
+    console.log(player)
+    if (player && startTime) {
+      player.seekTo(startTime / 1000)
+    }
+  }, [startTime, player])
 
   if (fetching) return <p>Loading...</p>
   if (error) return <p>Oh no... {error.message}</p>
@@ -78,7 +86,12 @@ const SongTweak = () => {
     }
   }
   const handleReady = (event: any) => {
-    setPlayer(event.target)
+    const newPlayer = event.target
+    setPlayer(newPlayer)
+    if (newPlayer && oldStartTime) {
+      newPlayer.seekTo(oldStartTime / 1000)
+      newPlayer.pauseVideo()
+    }
   }
 
   const setTime = () => {
@@ -89,10 +102,13 @@ const SongTweak = () => {
   }
 
   const handleSubmit = () => {
-    updateVideoInfo({ id, gap: startTime, videoId: parsedID }).then((res) => {
-      console.log(res)
+    updateVideoInfo({ id, gap: startTime, videoId: parsedID }).then(() => {
       history.push(`/song/${id}`)
     })
+  }
+
+  const handleTimeChange = (amount: number) => {
+    setStartTime((startTime || 0) + amount * 1000)
   }
 
   return (
@@ -105,7 +121,9 @@ const SongTweak = () => {
             onChange={handleChange}
             value={videoIdField}
           />
-          <button onClick={handleSet}>Select link</button>
+          <button className="bigButton" onClick={handleSet}>
+            Select link
+          </button>
           <a
             target="_blank"
             rel="noreferrer"
@@ -119,7 +137,9 @@ const SongTweak = () => {
         </div>
       ) : !startTime ? (
         <div>
-          <button onClick={setTime}>Set start time</button>
+          <button className="bigButton" onClick={setTime}>
+            Set start time
+          </button>
           <YouTube
             videoId={song.videoId || parsedID}
             opts={{
@@ -132,6 +152,7 @@ const SongTweak = () => {
             }}
             onReady={handleReady}
           />
+          <h3>First lyric: "{song.notePages[0].notes.map(({ lyric }) => lyric).join('')}"</h3>
           <h3>Pause at the point the lyrics start at, an press the "Set start time" -button</h3>
           <h3>YouTube controls: </h3>
           Normal YouTube controls, just click on the timeline. <br />
@@ -142,13 +163,42 @@ const SongTweak = () => {
       ) : (
         <div>
           <div>
-            YouTube video ID: {parsedID} <button onClick={() => setParsedID('')}>Change</button>
+            YouTube video ID: {parsedID}
+            <button className="bigButton" onClick={() => setParsedID('')}>
+              Change
+            </button>
           </div>
           <div>
-            Start time: {(startTime / 1000).toFixed(3)}s
-            <button onClick={() => setStartTime(null)}>Change</button>
+            Start time: {(startTime / 1000).toFixed(2)}s
+            <button
+              className="bigButton"
+              onClick={() => {
+                setOldStartTime(startTime)
+                setStartTime(null)
+              }}
+            >
+              Change
+            </button>
+            <SkipButton amount={-1} onClick={handleTimeChange} />
+            <SkipButton amount={-0.1} onClick={handleTimeChange} />
+            <SkipButton amount={-0.01} onClick={handleTimeChange} />
+            <SkipButton amount={0.01} onClick={handleTimeChange} />
+            <SkipButton amount={0.1} onClick={handleTimeChange} />
+            <SkipButton amount={1} onClick={handleTimeChange} />
           </div>
-          <button onClick={handleSubmit}>Submit</button>
+          <button className="bigButton" onClick={handleSubmit}>
+            Submit
+          </button>
+          <div className="relative">
+            <Canvas
+              lyricPlayMode={true}
+              voice={null}
+              tuner={null}
+              songInfo={{ ...song, gap: startTime, videoId: parsedID }}
+              width={1000}
+              height={500}
+            />
+          </div>
         </div>
       )}
     </div>
