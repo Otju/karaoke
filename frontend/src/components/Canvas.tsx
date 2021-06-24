@@ -17,11 +17,12 @@ interface props {
   tuner: any
   songInfo: Song
   lyricPlayMode?: boolean
+  startTime?: number
   width: number
   height: number
 }
 
-const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height }: props) => {
+const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTime }: props) => {
   const [note, setNote] = useState<Note>({ pitch: 0, name: '', currentBeat: -40 })
   const [animationId, setAnimationId] = useState(0)
   const [savedStartTime, setSavedStartTime] = useState<number | null>(null)
@@ -60,6 +61,13 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height }: props)
     ])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentWholeBeat])
+
+  useEffect(() => {
+    if (startTime && player) {
+      handleSkip(startTime)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startTime])
 
   const handleReady = (event: any) => {
     setPlayer(event.target)
@@ -130,11 +138,11 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height }: props)
     player.pauseVideo()
   }
 
-  const handleSkip = () => {
+  const handleSkip = (value: number) => {
     player.pauseVideo()
     const timeNow = document.timeline.currentTime
     setPauseTime(timeNow)
-    const newStartTime = Math.floor(gap / 1000)
+    const newStartTime = Math.floor(value / 1000)
     player.seekTo(newStartTime)
     if (timeNow) {
       setSavedStartTime(timeNow - newStartTime * 1000)
@@ -144,7 +152,7 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height }: props)
 
   const handlePlayAndSkip = () => {
     handlePlay()
-    handleSkip()
+    handleSkip(gap)
   }
 
   return (
@@ -192,7 +200,7 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height }: props)
                 >
                   {stopped ? <IoPlaySharp size={30} /> : <IoPauseSharp size={30} />}
                 </button>
-                <button className="bigButton" onClick={handleSkip}>
+                <button className="bigButton" onClick={() => handleSkip(gap)}>
                   <IoPlaySkipForwardSharp size={30} />
                 </button>
                 <div>

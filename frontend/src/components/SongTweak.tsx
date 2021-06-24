@@ -4,7 +4,6 @@ import { SongQuery } from '../graphql/queries'
 import { UpdateVideoInfo } from '../graphql/mutations'
 import { Song } from '../types/types'
 import React, { useState } from 'react'
-import YouTube from 'react-youtube'
 import { useEffect } from 'react'
 import Canvas from './Canvas'
 import SkipButton from './SkipButton'
@@ -12,11 +11,9 @@ import SkipButton from './SkipButton'
 const SongTweak = () => {
   const [videoIdField, setVideoIdField] = useState('')
   const [isInvalid, setIsInvalid] = useState(false)
-  const [player, setPlayer] = useState<any>()
 
   const [parsedID, setParsedID] = useState('')
-  const [startTime, setStartTime] = useState<number | null>(null)
-  const [oldStartTime, setOldStartTime] = useState<number | null>(null)
+  const [startTime, setStartTime] = useState<number>(0)
 
   const [, updateVideoInfo] = useMutation(UpdateVideoInfo)
 
@@ -40,13 +37,6 @@ const SongTweak = () => {
       }
     }
   }, [data])
-
-  useEffect(() => {
-    console.log(player)
-    if (player && startTime) {
-      player.seekTo(startTime / 1000)
-    }
-  }, [startTime, player])
 
   if (fetching) return <p>Loading...</p>
   if (error) return <p>Oh no... {error.message}</p>
@@ -85,6 +75,7 @@ const SongTweak = () => {
       setParsedID(parsedIDTemp)
     }
   }
+  /*
   const handleReady = (event: any) => {
     const newPlayer = event.target
     setPlayer(newPlayer)
@@ -100,6 +91,7 @@ const SongTweak = () => {
       setStartTime(time * 1000)
     }
   }
+  */
 
   const handleSubmit = () => {
     updateVideoInfo({ id, gap: startTime, videoId: parsedID }).then(() => {
@@ -135,31 +127,6 @@ const SongTweak = () => {
             Go to YouTube with search
           </a>
         </div>
-      ) : !startTime ? (
-        <div>
-          <button className="bigButton" onClick={setTime}>
-            Set start time
-          </button>
-          <YouTube
-            videoId={song.videoId || parsedID}
-            opts={{
-              playerVars: {
-                iv_load_policy: 3,
-                modestbranding: 1,
-                showinfo: 0,
-                rel: 0,
-              },
-            }}
-            onReady={handleReady}
-          />
-          <h3>First lyric: "{song.notePages[0].notes.map(({ lyric }) => lyric).join('')}"</h3>
-          <h3>Pause at the point the lyrics start at, an press the "Set start time" -button</h3>
-          <h3>YouTube controls: </h3>
-          Normal YouTube controls, just click on the timeline. <br />
-          You can skip one frame forward or back with "," and "." or "{'<'}" and "{'>'}" <br />
-          You can also change the video playback speed from the gear icon in the bottom right
-          <br />
-        </div>
       ) : (
         <div>
           <div>
@@ -169,21 +136,14 @@ const SongTweak = () => {
             </button>
           </div>
           <div>
-            Start time: {(startTime / 1000).toFixed(2)}s
-            <button
-              className="bigButton"
-              onClick={() => {
-                setOldStartTime(startTime)
-                setStartTime(null)
-              }}
-            >
-              Change
-            </button>
+            <SkipButton amount={-10} onClick={handleTimeChange} />
             <SkipButton amount={-1} onClick={handleTimeChange} />
             <SkipButton amount={-0.1} onClick={handleTimeChange} />
             <SkipButton amount={-0.01} onClick={handleTimeChange} />
+            Start time: {(startTime / 1000).toFixed(2)}s
             <SkipButton amount={0.01} onClick={handleTimeChange} />
             <SkipButton amount={0.1} onClick={handleTimeChange} />
+            <SkipButton amount={1} onClick={handleTimeChange} />
             <SkipButton amount={1} onClick={handleTimeChange} />
           </div>
           <button className="bigButton" onClick={handleSubmit}>
@@ -195,6 +155,7 @@ const SongTweak = () => {
               voice={null}
               tuner={null}
               songInfo={{ ...song, gap: startTime, videoId: parsedID }}
+              startTime={startTime}
               width={1000}
               height={500}
             />

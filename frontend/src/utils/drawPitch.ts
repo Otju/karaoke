@@ -17,6 +17,13 @@ interface BeatToX {
   beatMargin: number
 }
 
+interface NoteToY {
+  canvasheight: number
+  noteBottomMargin?: number
+  noteTopMargin?: number
+  note: number
+}
+
 const calcbeatLength = ({ canvaswidth, startBeat, endBeat, beatMargin }: CalcBeatLength) => {
   const beatAmount = endBeat - startBeat
   const beatLength = (canvaswidth - beatMargin * 2) / beatAmount
@@ -26,6 +33,12 @@ const calcbeatLength = ({ canvaswidth, startBeat, endBeat, beatMargin }: CalcBea
 const beatToX = ({ relativeBeat, beatLength, beatMargin }: BeatToX) => {
   const x = beatMargin + relativeBeat * beatLength
   return x
+}
+
+const noteToY = ({ canvasheight, noteBottomMargin = 160, noteTopMargin = 200, note }: NoteToY) => {
+  const heightLeft = canvasheight - noteBottomMargin - noteTopMargin
+  const y = noteTopMargin + heightLeft - heightLeft * ((note + 1) / 24)
+  return y
 }
 
 const drawPitch = (
@@ -83,9 +96,9 @@ const drawPitch = (
       if (!currentOctave) calcOctave()
       const relativeBeat = beat - startBeat
       const x = beatToX({ relativeBeat, beatLength, beatMargin })
-      const y = canvasheight - canvasheight * ((note + 1) / 24)
+      const y = noteToY({ canvasheight, note })
       ctx.fillStyle = 'grey'
-      roundRect(ctx, x, y, length * beatLength, 30, 5, true, false)
+      roundRect(ctx, x, y, length * beatLength, 20, 5, true, false)
       if (currentBeat >= beat) {
         filledLyrics += lyric
       } else {
@@ -123,9 +136,9 @@ const drawPitch = (
         const isRightNote = closestNoteToSungNoteIndex === index
         const relativeBeat = wholeBeat - startBeat
         const x = beatToX({ relativeBeat, beatLength, beatMargin })
-        const y = canvasheight - canvasheight * ((closestNoteToSungNoteIndex + 1) / 24)
+        const y = noteToY({ note: closestNoteToSungNoteIndex, canvasheight })
         ctx.fillStyle = isRightNote ? 'blue' : 'rgba(0, 0, 255, 0.3)'
-        const width = isRightNote ? 30 : 20
+        const width = 20
         const { beat, length } = currentNote
         if (wholeBeat === beat) {
           //Start of note
