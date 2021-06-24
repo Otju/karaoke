@@ -1,8 +1,6 @@
-import { Octave, SungNote, Dimensions, NotePage } from '../types/types'
-import getOctaves from './getOctaves'
-import { roundRect, closestIndex } from './canvasHelpers'
-
-const octaves = getOctaves()
+import { SungNote, Dimensions, NotePage } from '../types/types'
+import { roundRect } from './canvasHelpers'
+import { noteNames } from './noteNames'
 
 interface CalcBeatLength {
   canvaswidth: number
@@ -43,18 +41,15 @@ const noteToY = ({ canvasheight, noteBottomMargin = 160, noteTopMargin = 200, no
 
 const drawPitch = (
   ctx: any,
-  pitch: number,
   currentBeat: number,
-  currentOctave: Octave | undefined,
-  setCurrentOctave: Function,
   sungNotes: SungNote[],
   setSungNotes: Function,
   pageSize: Dimensions,
-  notePages: NotePage[]
+  notePages: NotePage[],
+  snapAmount: number
 ) => {
   const canvasheight = pageSize.height
   const canvaswidth = pageSize.width
-
   const currentNotePageIndex = notePages.findIndex(
     ({ startBeat, endBeat }) => currentBeat >= startBeat - 20 && currentBeat <= endBeat
   )
@@ -74,26 +69,7 @@ const drawPitch = (
     let notFilledLyrics = ''
     let filledLyrics = ''
 
-    if (Math.floor(currentBeat) === startBeat - 1) {
-      setCurrentOctave(null)
-    }
-
-    currentNotePage.notes.forEach(({ beat, length, note, lyric, isSecondOctave }) => {
-      const calcOctave = () => {
-        const isActive = beat <= currentBeat && beat + length >= currentBeat
-        if (isActive) {
-          const newCurrentOctaveIndex = octaves.findIndex(
-            ({ min, max }) => pitch >= min && pitch < max
-          )
-          if (newCurrentOctaveIndex !== -1) {
-            const newCurrentOctave = isSecondOctave
-              ? octaves[newCurrentOctaveIndex - 1]
-              : octaves[newCurrentOctaveIndex]
-            setCurrentOctave(newCurrentOctave)
-          }
-        }
-      }
-      if (!currentOctave) calcOctave()
+    currentNotePage.notes.forEach(({ beat, length, note, lyric }) => {
       const relativeBeat = beat - startBeat
       const x = beatToX({ relativeBeat, beatLength, beatMargin })
       const y = noteToY({ canvasheight, note })
@@ -120,23 +96,31 @@ const drawPitch = (
     ctx.fillText(notFilledLyrics, textX + filledLength, canvasheight - 60)
     ctx.fillText(nextPageLyrics, nextPageLyricsX, canvasheight - 20)
 
-    sungNotes.forEach(({ wholeBeat, name, pitch }) => {
+    sungNotes.forEach(({ wholeBeat, name }) => {
       if (wholeBeat === currentNotePage.startBeat - 1) {
         setSungNotes([])
       }
       const currentNote = currentNotePage.notes.find(
         ({ beat, length }) => wholeBeat >= beat && wholeBeat < beat + length
       )
-      if (currentNote && name && currentOctave) {
-        let index = currentNote.note
-        const closestNoteToSungNoteIndex = closestIndex(
-          pitch,
-          currentOctave.octaveNotes.map(({ freq }) => freq)
-        )
-        const isRightNote = closestNoteToSungNoteIndex === index
+
+      if (currentNote && name) {
+        let rightNoteIndex = currentNote.note
+        const coolName = `${name.replace(/\d+/, '')}`
+        let sungNoteIndex = noteNames.findIndex((item) => item === coolName)
+        const closenessToRightNote = Math.abs(sungNoteIndex - rightNoteIndex)
+        const closenessToRightNoteOctaveHigher = Math.abs(sungNoteIndex + 12 - rightNoteIndex)
+        if (closenessToRightNoteOctaveHigher < closenessToRightNote) {
+          sungNoteIndex += 12
+        }
+        let isRightNote = false
+        if (Math.abs(sungNoteIndex - rightNoteIndex) <= snapAmount) {
+          sungNoteIndex = rightNoteIndex
+          isRightNote = true
+        }
         const relativeBeat = wholeBeat - startBeat
         const x = beatToX({ relativeBeat, beatLength, beatMargin })
-        const y = noteToY({ note: closestNoteToSungNoteIndex, canvasheight })
+        const y = noteToY({ note: sungNoteIndex, canvasheight })
         ctx.fillStyle = isRightNote ? 'blue' : 'rgba(0, 0, 255, 0.3)'
         const width = 20
         const { beat, length } = currentNote

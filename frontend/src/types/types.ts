@@ -17,13 +17,11 @@ export interface Dimensions {
 }
 
 export interface Note {
-  pitch: number
   name: string
   currentBeat: number
 }
 
 export interface SungNote {
-  pitch: number
   name: string
   wholeBeat: number
 }

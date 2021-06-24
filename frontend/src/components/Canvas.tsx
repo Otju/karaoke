@@ -8,7 +8,7 @@ import {
   IoArrowBackSharp,
   IoSettingsSharp,
 } from 'react-icons/io5'
-import { Note, Octave, Song, SungNote } from '../types/types'
+import { Song, SungNote, Note } from '../types/types'
 import drawPitch from '../utils/drawPitch'
 import { Link } from 'react-router-dom'
 
@@ -23,13 +23,12 @@ interface props {
 }
 
 const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTime }: props) => {
-  const [note, setNote] = useState<Note>({ pitch: 0, name: '', currentBeat: -40 })
+  const [note, setNote] = useState<Note>({ name: '', currentBeat: -40 })
   const [animationId, setAnimationId] = useState(0)
   const [savedStartTime, setSavedStartTime] = useState<number | null>(null)
   const [pauseTime, setPauseTime] = useState<number | null>(null)
   const [player, setPlayer] = useState<any>()
   const [stopped, setStopped] = useState(true)
-  const [currentOctave, setCurrentOctave] = useState<Octave | undefined>()
   const [sungNotes, setSungNotes] = useState<SungNote[]>([])
   const [currentWholeBeat, setCurrentWholeBeat] = useState<number>(0)
 
@@ -43,22 +42,17 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
     const ctx = canvas.getContext('2d')
     drawPitch(
       ctx,
-      note.pitch,
       note.currentBeat,
-      currentOctave,
-      setCurrentOctave,
       sungNotes,
       setSungNotes,
       { width: width / 2, height },
-      notePages
+      notePages,
+      lyricPlayMode ? 12 : 1
     )
-  }, [note, currentOctave, sungNotes, width, height, notePages])
+  }, [note, sungNotes, width, height, notePages, lyricPlayMode])
 
   useEffect(() => {
-    setSungNotes((notes) => [
-      ...notes,
-      { pitch: note.pitch, name: note.name, wholeBeat: currentWholeBeat },
-    ])
+    setSungNotes((notes) => [...notes, { name: note.name, wholeBeat: currentWholeBeat }])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentWholeBeat])
 
@@ -100,19 +94,10 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
         setCurrentWholeBeat(newWholeBeat)
       }
       let newNote
-      if (!lyricPlayMode) {
-        newNote = { pitch: tuner.pitch, name: tuner.noteName, currentBeat }
+      if (lyricPlayMode) {
+        newNote = { name: 'A', currentBeat }
       } else {
-        const currentNotePage = notePages.find(
-          ({ startBeat, endBeat }) => currentBeat >= startBeat - 20 && currentBeat <= endBeat
-        )
-        const currentNote = currentNotePage?.notes.find(
-          ({ beat, length }) => beat - 1 <= currentBeat && beat + length >= currentBeat
-        )
-        const note = currentNote?.note && currentOctave?.octaveNotes[currentNote?.note]
-        newNote = note
-          ? { pitch: note.freq, name: note.name, currentBeat }
-          : { pitch: 440, name: 'A', currentBeat }
+        newNote = { name: tuner.noteName, currentBeat }
       }
       setNote(newNote)
       setAnimationId(requestAnimationFrame((callback) => render(callback, startTime)))
@@ -203,11 +188,6 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
                 <button className="bigButton" onClick={() => handleSkip(gap)}>
                   <IoPlaySkipForwardSharp size={30} />
                 </button>
-                <div>
-                  <button className="bigButton">
-                    Low C: {currentOctave ? `C${currentOctave.octave}` : '?'}
-                  </button>
-                </div>
               </>
             ))}
         </div>
