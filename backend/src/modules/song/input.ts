@@ -14,7 +14,7 @@ export class NotePageNoteInput {
 
   @Field()
   @Min(0)
-  @Max(23)
+  @Max(11)
   note: number
 
   @Field()

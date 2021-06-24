@@ -144,7 +144,7 @@ const SongTweak = () => {
             <SkipButton amount={0.01} onClick={handleTimeChange} />
             <SkipButton amount={0.1} onClick={handleTimeChange} />
             <SkipButton amount={1} onClick={handleTimeChange} />
-            <SkipButton amount={1} onClick={handleTimeChange} />
+            <SkipButton amount={10} onClick={handleTimeChange} />
           </div>
           <button className="bigButton" onClick={handleSubmit}>
             Submit

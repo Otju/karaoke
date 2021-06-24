@@ -1,6 +1,7 @@
 import { ObjectType, Field } from 'type-graphql'
-import { prop, index } from '@typegoose/typegoose'
+import { prop, index, plugin } from '@typegoose/typegoose'
 import { ObjectId } from 'mongodb'
+import mongoosePaginate from 'mongoose-paginate-v2'
 
 @ObjectType()
 export class NotePageNote {
@@ -16,7 +17,7 @@ export class NotePageNote {
   @Field()
   length: number
 
-  @prop()
+  @prop({ max: 11, min: 0 })
   @Field()
   note: number
 
@@ -53,6 +54,7 @@ export class NotePage {
   { default_language: 'none', language_override: 'none' }
 )
 @ObjectType()
+@plugin(mongoosePaginate)
 export class Song {
   @Field()
   readonly _id: ObjectId
@@ -128,4 +130,7 @@ export class Song {
   @prop()
   @Field(() => [String], { nullable: true })
   alternativeVideoIds?: string[]
+
+  //@ts-ignore
+  static paginate(search: Object, options: Object)
 }

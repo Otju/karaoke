@@ -5,7 +5,7 @@ const parseNotes = require('./parseNotes')
 const fs = require('fs')
 const cliProgress = require('cli-progress')
 
-const saveSongToDB = require('./saveToDB')
+const { saveSongToDB } = require('./saveToDB')
 
 const toBoolean = (string) => {
   if (string && typeof string === 'string' && string.toLowerCase === 'yes') {

@@ -39,6 +39,11 @@ const noteToY = ({ canvasheight, noteBottomMargin = 160, noteTopMargin = 200, no
   return y
 }
 
+const getSungNoteIndex = (name: string) => {
+  const parsedName = `${name.replace(/\d+/, '')}`
+  return noteNames.findIndex((item) => item === parsedName)
+}
+
 const drawPitch = (
   ctx: any,
   currentBeat: number,
@@ -106,8 +111,7 @@ const drawPitch = (
 
       if (currentNote && name) {
         let rightNoteIndex = currentNote.note
-        const coolName = `${name.replace(/\d+/, '')}`
-        let sungNoteIndex = noteNames.findIndex((item) => item === coolName)
+        let sungNoteIndex = getSungNoteIndex(name)
         const closenessToRightNote = Math.abs(sungNoteIndex - rightNoteIndex)
         const closenessToRightNoteOctaveHigher = Math.abs(sungNoteIndex + 12 - rightNoteIndex)
         if (closenessToRightNoteOctaveHigher < closenessToRightNote) {
@@ -122,16 +126,17 @@ const drawPitch = (
         const x = beatToX({ relativeBeat, beatLength, beatMargin })
         const y = noteToY({ note: sungNoteIndex, canvasheight })
         ctx.fillStyle = isRightNote ? 'blue' : 'rgba(0, 0, 255, 0.3)'
+        const greyFixedBeatLength = beatLength + (isRightNote ? 1 : 0)
         const width = 20
         const { beat, length } = currentNote
         if (wholeBeat === beat) {
           //Start of note
-          roundRect(ctx, x, y, beatLength, width, { tl: 5, bl: 5 }, true, false)
+          roundRect(ctx, x, y, greyFixedBeatLength, width, { tl: 5, bl: 5 }, true, false)
         } else if (wholeBeat === beat + length - 1) {
           //End of note
-          roundRect(ctx, x, y, beatLength, width, { tr: 5, br: 5 }, true, false)
+          roundRect(ctx, x, y, greyFixedBeatLength, width, { tr: 5, br: 5 }, true, false)
         } else {
-          ctx.fillRect(x, y, beatLength, width)
+          ctx.fillRect(x, y, greyFixedBeatLength, width)
         }
       }
     })

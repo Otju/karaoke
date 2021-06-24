@@ -8,12 +8,17 @@ interface props {
   defaultValue?: boolean
   color?: string
   tooltip?: string
+  onClick?: Function
 }
 
-const useCheckBox = ({ Icon, defaultValue, color, tooltip }: props) => {
+const useCheckBox = ({ Icon, defaultValue, color, tooltip, onClick }: props) => {
   const [value, setValue] = useState<boolean>(Boolean(defaultValue))
+  const handleClick = () => {
+    if (onClick) onClick()
+    setValue(!value)
+  }
   const field = (
-    <button onClick={() => setValue(!value)} className="invisibleButton" style={{ color }}>
+    <button onClick={handleClick} className="invisibleButton" style={{ color }}>
       <CrossedIcon Icon={Icon} crossed={!value} tooltip={tooltip} />
     </button>
   )

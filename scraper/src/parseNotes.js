@@ -44,13 +44,13 @@ const parseNotes = (text) => {
       const length = Number(parts[2])
       const note = Number(parts[3])
       const isSecondOctave = Boolean(note > 12)
-      const noteToMax12 = note >= 12 ? note - Math.floor(note / 12) * 12 : note
-      const noteName = noteNames[noteToMax12]
+      const noteToMax11 = note >= 12 ? note - Math.floor(note / 12) * 12 : note
+      const noteName = noteNames[noteToMax11]
       const lyric = (hasSpace ? ' ' : '') + parts[4]
       if (!noteName) {
-        console.log({ type, beat, length, note, lyric, noteName, isSecondOctave })
+        console.log({ type, beat, length, note: noteToMax11, lyric, noteName, isSecondOctave })
       }
-      currentNotes.push({ type, beat, length, note, lyric, noteName, isSecondOctave })
+      currentNotes.push({ type, beat, length, note: noteToMax11, lyric, noteName, isSecondOctave })
     } else if (/- \d+/gm.test(text)) {
       const parts = text.split(' ')
       const beat = Number(parts[1])
