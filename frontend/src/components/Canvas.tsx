@@ -34,9 +34,30 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
   const [mouseLastMove, setMouseLastMove] = useState(0)
   const [mouseOnButton, setMouseOnButton] = useState(false)
   const [time, setTime] = useState(0)
-  const [scoreInfo, setScoreInfo] = useState<ScoreInfo>({ score: 0, hitNotes: 0, missedNotes: 0 })
+  const [scoreInfo, setScoreInfo] = useState<ScoreInfo>({
+    score: 0,
+    hitNotes: 0,
+    missedNotes: 0,
+    scorePerNote: 1,
+  })
 
   const canvasRef = useRef(null)
+
+  useEffect(() => {
+    let totalnoteLength = 0
+    songInfo.notePages.forEach(({ notes }) => {
+      notes.forEach(({ type, length }) => {
+        if (type === 'normal') {
+          totalnoteLength += length
+        } else if (type === 'golden') {
+          totalnoteLength += length * 2
+        }
+      })
+    })
+    const maxScore = 10000
+    const scorePerNote = maxScore / totalnoteLength
+    setScoreInfo((oldInfo) => ({ ...oldInfo, scorePerNote }))
+  }, [songInfo])
 
   const { bpm, notePages, gap, videoId } = songInfo
 
@@ -56,8 +77,6 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
       setScoreInfo
     )
   }, [note, sungNotes, width, height, notePages, lyricPlayMode, scoreInfo])
-
-  console.log(scoreInfo)
 
   useEffect(() => {
     setSungNotes((notes) => [...notes, { name: note.name, wholeBeat: currentWholeBeat }])
@@ -168,6 +187,29 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
 
   const buttonsAreHidden = !mouseOnButton && time - mouseLastMove > 2000
 
+  const getScoreText = (scorePercentage: number | undefined) => {
+    if (scorePercentage === undefined) {
+      return null
+    }
+    if (scorePercentage >= 0.9) {
+      return ['Perfect!', 'green']
+    } else if (scorePercentage >= 0.8) {
+      return ['Amazing!', 'green']
+    } else if (scorePercentage >= 0.7) {
+      return ['Great!', 'green']
+    } else if (scorePercentage >= 0.6) {
+      return ['Good', 'green']
+    } else if (scorePercentage >= 0.5) {
+      return ['Decent', 'yellow']
+    } else if (scorePercentage >= 0.3) {
+      return [':(', 'red']
+    } else {
+      return ['Dude, really?', 'red']
+    }
+  }
+
+  const scoreText = getScoreText(scoreInfo.percentageOnPage)
+
   return (
     <div style={{ width, height }} className="canvasContainer" onMouseMove={handleMouseMove}>
       <div>
@@ -192,6 +234,23 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
           />
         </div>
         {stopped && <h1 className="absCenter">PAUSED</h1>}
+        <div className="scoreBox">
+          <span>Score: {scoreInfo.score.toFixed(0)}</span>
+
+          {scoreInfo.addedAmount !== undefined && scoreText && (
+            <span
+              className="percentageScore"
+              key={scoreInfo.missedNotes + scoreInfo.hitNotes}
+            ></span>
+          )}
+          <span className="percentageScore" key={scoreInfo.missedNotes + scoreInfo.hitNotes}>
+            {scoreInfo.addedAmount !== undefined && scoreText && (
+              <b style={{ color: scoreText[1] }}>+ {scoreInfo.addedAmount.toFixed(0)}</b>
+            )}
+            <br />
+            {scoreText && <b style={{ color: scoreText[1] }}>{scoreText[0]}</b>}
+          </span>
+        </div>
       </div>
       <div className={buttonsAreHidden ? 'fadeOut' : 'fadeIn'}>
         <div className="playControls">

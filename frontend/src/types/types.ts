@@ -64,4 +64,7 @@ export interface ScoreInfo {
   score: number
   hitNotes: number
   missedNotes: number
+  scorePerNote: number
+  addedAmount?: number
+  percentageOnPage?: number
 }

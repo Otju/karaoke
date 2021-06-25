@@ -61,9 +61,9 @@ const drawPitch = (
     ({ startBeat, endBeat }) => currentBeat >= startBeat - 1000 && currentBeat <= endBeat
   )
   const currentNotePage = notePages[currentNotePageIndex]
-  const nextPageLyrics = notePages[currentNotePageIndex + 1].notes
-    .map(({ lyric }) => lyric)
-    .join('')
+  const nextPageLyrics = notePages[currentNotePageIndex + 1]
+    ? notePages[currentNotePageIndex + 1].notes.map(({ lyric }) => lyric).join('')
+    : ''
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   if (currentNotePage) {
     const { startBeat, endBeat } = currentNotePage
@@ -157,6 +157,7 @@ const drawPitch = (
       const isLastBeatOfPage = wholeBeat === currentNotePage.endBeat
       if (isLastBeatOfPage) {
         let newScore = scoreInfo
+        let scoreForPage = 0
         currentNotePage.notes.forEach((currentNote) => {
           const { beat, length } = currentNote
           const sungNotesForNote = sungNotes.filter(
@@ -171,11 +172,26 @@ const drawPitch = (
           })
           const percentageOfRight = rightNotesForNote.length / sungNotesForNote.length
           if (percentageOfRight > 0.7) {
+            const multiplier = currentNote.type === 'golden' ? 2 : 1
+            const noteScore = currentNote.length * scoreInfo.scorePerNote * multiplier
             newScore.hitNotes++
+            newScore.score += noteScore
+            scoreForPage += currentNote.length * scoreInfo.scorePerNote * multiplier
           } else {
             newScore.missedNotes++
           }
         })
+        let maxScoreForPage = 0
+        currentNotePage.notes.forEach(({ type, length }) => {
+          if (type === 'normal') {
+            maxScoreForPage += length
+          } else if (type === 'golden') {
+            maxScoreForPage += length * 2
+          }
+        })
+        maxScoreForPage = maxScoreForPage * scoreInfo.scorePerNote
+        newScore.percentageOnPage = scoreForPage / maxScoreForPage
+        newScore.addedAmount = scoreForPage
         setScoreInfo(newScore)
         setSungNotes([])
       }

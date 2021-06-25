@@ -211,3 +211,30 @@ input:focus {
   opacity: 0;
   transition: visibility 0s 1s, opacity 1s linear;
 }
+
+.percentageScore {
+  animation: percentageFadeOut ease 3s forwards;
+}
+
+@keyframes percentageFadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.scoreBox {
+  background-color: rgba(0, 0, 0, 0.5);
+  width: 160px;
+  height: 80px;
+  position: absolute;
+  right: 20%;
+  top: 10%;
+  border-radius: 20px;
+  font-size: 20px;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
