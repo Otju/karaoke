@@ -70,9 +70,11 @@ const SongSelect = () => {
   return (
     <div className="centerX">
       <div className="songSelectContainer">
-        {search.field}
-        {hasVideo.field}
-        {hasRightGap.field}
+        <div className="searchOptions">
+          {search.field}
+          {hasVideo.field}
+          {hasRightGap.field}
+        </div>
         {songs ? (
           songs.length === 0 ? (
             <div>No song matched search</div>

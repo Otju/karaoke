@@ -32,7 +32,16 @@ const KaraokePage = ({ voice, tuner }: props) => {
   const { width, height } = getWindowDimensions()
 
   return (
-    <Canvas voice={voice} tuner={tuner} songInfo={data.getSong} width={width} height={height} />
+    <>
+      <Canvas
+        voice={voice}
+        tuner={tuner}
+        songInfo={data.getSong}
+        width={width}
+        height={height - 10}
+      />
+      <div className="vocalBackground"></div>
+    </>
   )
 }
 

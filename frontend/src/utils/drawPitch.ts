@@ -1,7 +1,6 @@
-import { SungNote, Dimensions, NotePage } from '../types/types'
+import { SungNote, Dimensions, NotePage, ScoreInfo, NotePageNote } from '../types/types'
 import { roundRect } from './canvasHelpers'
 import { noteNames } from './noteNames'
-import pointInPolygon from 'point-in-polygon'
 
 interface CalcBeatLength {
   canvaswidth: number
@@ -45,58 +44,6 @@ const getSungNoteIndex = (name: string) => {
   return noteNames.findIndex((item) => item === parsedName)
 }
 
-interface RandomNumberInput {
-  min: number
-  max: number
-}
-
-interface RandomNumbersInput {
-  minX: number
-  maxX: number
-  minY: number
-  maxY: number
-  count: number
-}
-
-interface PolygonInput {
-  polygon: number[][]
-  count: number
-}
-
-const getRandomNumber = ({ min, max }: RandomNumberInput) => {
-  return Math.random() * (max - min) + min
-}
-
-const getRandomNumbersInRectangle = ({ minX, maxX, minY, maxY, count }: RandomNumbersInput) => {
-  const numbers = []
-  for (let i = 0; i < count; i++) {
-    const x = getRandomNumber({ min: minX, max: maxX })
-    const y = getRandomNumber({ min: minY, max: maxY })
-    numbers.push([x, y])
-  }
-  return numbers
-}
-
-const getRandomNumbersInPolygon = ({ polygon, count }: PolygonInput) => {
-  const xCoords = polygon
-    .map(([x]) => x)
-    .sort((a, b) => {
-      return a - b
-    })
-  const yCoords = polygon
-    .map(([_, y]) => y)
-    .sort((a, b) => {
-      return a - b
-    })
-  const minX = xCoords[0]
-  const maxX = xCoords[xCoords.length - 1]
-  const minY = yCoords[0]
-  const maxY = yCoords[yCoords.length - 1]
-  let numbers = getRandomNumbersInRectangle({ minX, minY, maxX, maxY, count })
-  numbers = numbers.filter((point) => pointInPolygon(point, polygon))
-  return numbers
-}
-
 const drawPitch = (
   ctx: any,
   currentBeat: number,
@@ -104,12 +51,14 @@ const drawPitch = (
   setSungNotes: Function,
   pageSize: Dimensions,
   notePages: NotePage[],
-  snapAmount: number
+  snapAmount: number,
+  scoreInfo: ScoreInfo,
+  setScoreInfo: Function
 ) => {
   const canvasheight = pageSize.height
   const canvaswidth = pageSize.width
   const currentNotePageIndex = notePages.findIndex(
-    ({ startBeat, endBeat }) => currentBeat >= startBeat - 20 && currentBeat <= endBeat
+    ({ startBeat, endBeat }) => currentBeat >= startBeat - 1000 && currentBeat <= endBeat
   )
   const currentNotePage = notePages[currentNotePageIndex]
   const nextPageLyrics = notePages[currentNotePageIndex + 1].notes
@@ -118,20 +67,23 @@ const drawPitch = (
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   if (currentNotePage) {
     const { startBeat, endBeat } = currentNotePage
-    const beatMargin = 20
+    const beatMargin = 250
     const beatLength = calcbeatLength({ canvaswidth, startBeat, endBeat, beatMargin })
     ctx.font = '32px Arial'
-    ctx.beginPath()
-    ctx.fillStyle = 'black'
-    ctx.fill()
     let notFilledLyrics = ''
     let filledLyrics = ''
 
-    currentNotePage.notes.forEach(({ beat, length, note, lyric }) => {
+    currentNotePage.notes.forEach(({ beat, length, note, lyric, type }) => {
       const relativeBeat = beat - startBeat
       const x = beatToX({ relativeBeat, beatLength, beatMargin })
       const y = noteToY({ canvasheight, note })
-      ctx.fillStyle = 'grey'
+      let fillColor = 'grey'
+      if (type === 'golden') {
+        fillColor = 'gold'
+      } else if (type === 'free') {
+        fillColor = 'green'
+      }
+      ctx.fillStyle = fillColor
       roundRect(ctx, x, y, length * beatLength, 20, 5, true, false)
       if (currentBeat >= beat) {
         filledLyrics += lyric
@@ -147,34 +99,44 @@ const drawPitch = (
     const textX = centerOfCanvas - totalWidth / 2
 
     const nextPageLyricsX = centerOfCanvas - ctx.measureText(nextPageLyrics).width / 2
-
+    const firstRowY = canvasheight - 50
+    const secondRowY = canvasheight - 10
     ctx.fillStyle = 'red'
-    ctx.fillText(filledLyrics, textX, canvasheight - 60)
+    ctx.fillText(filledLyrics, textX, firstRowY)
     ctx.fillStyle = 'white'
-    ctx.fillText(notFilledLyrics, textX + filledLength, canvasheight - 60)
-    ctx.fillText(nextPageLyrics, nextPageLyricsX, canvasheight - 20)
+    ctx.fillText(notFilledLyrics, textX + filledLength, firstRowY)
+    ctx.fillText(nextPageLyrics, nextPageLyricsX, secondRowY)
 
-    sungNotes.forEach(({ wholeBeat, name }) => {
-      if (wholeBeat === currentNotePage.startBeat - 1) {
-        setSungNotes([])
+    const calculateIsRightNote = (currentNote: NotePageNote, sungNoteName: string) => {
+      let rightNoteIndex = currentNote.note
+      let sungNoteIndex = getSungNoteIndex(sungNoteName)
+      const closenessToRightNote = Math.abs(sungNoteIndex - rightNoteIndex)
+      const closenessToRightNoteOctaveHigher = Math.abs(sungNoteIndex + 12 - rightNoteIndex)
+      if (closenessToRightNoteOctaveHigher < closenessToRightNote) {
+        sungNoteIndex += 12
       }
+      let isRightNote = false
+      if (Math.abs(sungNoteIndex - rightNoteIndex) <= snapAmount) {
+        sungNoteIndex = rightNoteIndex
+        isRightNote = true
+      }
+      return { isRightNote, sungNoteIndex }
+    }
+
+    const parseSungNote = (wholeBeat: number, sungNoteName: string) => {
+      if (!sungNoteName) return null
       const currentNote = currentNotePage.notes.find(
         ({ beat, length }) => wholeBeat >= beat && wholeBeat < beat + length
       )
+      if (!currentNote) return null
+      const { sungNoteIndex, isRightNote } = calculateIsRightNote(currentNote, sungNoteName)
+      return { sungNoteIndex, isRightNote, currentNote }
+    }
 
-      if (currentNote && name) {
-        let rightNoteIndex = currentNote.note
-        let sungNoteIndex = getSungNoteIndex(name)
-        const closenessToRightNote = Math.abs(sungNoteIndex - rightNoteIndex)
-        const closenessToRightNoteOctaveHigher = Math.abs(sungNoteIndex + 12 - rightNoteIndex)
-        if (closenessToRightNoteOctaveHigher < closenessToRightNote) {
-          sungNoteIndex += 12
-        }
-        let isRightNote = false
-        if (Math.abs(sungNoteIndex - rightNoteIndex) <= snapAmount) {
-          sungNoteIndex = rightNoteIndex
-          isRightNote = true
-        }
+    sungNotes.forEach(({ wholeBeat, name }) => {
+      const parsed = parseSungNote(wholeBeat, name)
+      if (parsed) {
+        const { sungNoteIndex, isRightNote, currentNote } = parsed
         const relativeBeat = wholeBeat - startBeat
         const x = beatToX({ relativeBeat, beatLength, beatMargin })
         const y = noteToY({ note: sungNoteIndex, canvasheight })
@@ -191,48 +153,31 @@ const drawPitch = (
         } else {
           ctx.fillRect(x, y, greyFixedBeatLength, width)
         }
-        const isLatestBeat = wholeBeat === Math.round(currentBeat)
-        if (isLatestBeat && isRightNote) {
-          const polygon = [
-            [x, y],
-            [x - 30, y],
-            [x - 30, y + 20],
-            [x, y + 20],
-          ]
-          const r = 5
-
-          const scale = 5
-          ctx.shadowColor = 'white'
-          ctx.shadowBlur = 20
-          ctx.scale(1, scale)
-
-          const newY = (y + 2 * r) / scale
-          const newX = x + 5
-          var gradient = ctx.createRadialGradient(newX, newY, r / 2, newX, newY, r)
-
-          gradient.addColorStop(0, 'white')
-          gradient.addColorStop(1, 'grey')
-
-          ctx.fillStyle = gradient
-          ctx.beginPath()
-          ctx.arc(newX, newY, r, 0, 2 * Math.PI)
-          ctx.fill()
-          ctx.setTransform(1, 0, 0, 1, 0, 0)
-
-          ctx.fillStyle = 'white'
-
-          const numbers = getRandomNumbersInPolygon({
-            polygon,
-            count: 2,
+      }
+      const isLastBeatOfPage = wholeBeat === currentNotePage.endBeat
+      if (isLastBeatOfPage) {
+        let newScore = scoreInfo
+        currentNotePage.notes.forEach((currentNote) => {
+          const { beat, length } = currentNote
+          const sungNotesForNote = sungNotes.filter(
+            ({ wholeBeat }) => wholeBeat >= beat && wholeBeat < beat + length
+          )
+          const rightNotesForNote = sungNotesForNote.filter(({ name }) => {
+            if (!name) {
+              return false
+            }
+            const { isRightNote } = calculateIsRightNote(currentNote, name)
+            return isRightNote
           })
-          numbers.forEach(([x, y]) => {
-            ctx.shadowBlur = 6
-            ctx.beginPath()
-            ctx.arc(x, y, 2, 0, 2 * Math.PI)
-            ctx.fill()
-          })
-          ctx.shadowBlur = 0
-        }
+          const percentageOfRight = rightNotesForNote.length / sungNotesForNote.length
+          if (percentageOfRight > 0.7) {
+            newScore.hitNotes++
+          } else {
+            newScore.missedNotes++
+          }
+        })
+        setScoreInfo(newScore)
+        setSungNotes([])
       }
     })
   }

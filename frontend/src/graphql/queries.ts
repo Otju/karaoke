@@ -17,6 +17,7 @@ export const SongQuery = `
         startBeat
         endBeat
         notes{
+          type
           beat
           length
           note

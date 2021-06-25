@@ -65,11 +65,13 @@ button {
   left: 50%;
   transform: translate(-50%, 0);
   top: 5%;
+  z-index: 600;
 }
 
 .leftSide {
   position: absolute;
   left: 20px;
+  z-index: 600;
 }
 
 .firstTop {
@@ -166,6 +168,7 @@ input {
   padding: 10px;
   height: 20px;
   border: 1px solid #ccc;
+  width: 300px;
 }
 input:focus {
   outline: none;
@@ -187,4 +190,24 @@ input:focus {
 
 .invisibleButton {
   background: none;
+}
+
+.searchOptions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  margin-top: 20px;
+}
+
+.fadeIn {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.1s linear;
+}
+
+.fadeOut {
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0s 1s, opacity 1s linear;
 }

@@ -19,7 +19,7 @@ const useCheckBox = ({ Icon, defaultValue, color, tooltip, onClick }: props) => 
   }
   const field = (
     <button onClick={handleClick} className="invisibleButton" style={{ color }}>
-      <CrossedIcon Icon={Icon} crossed={!value} tooltip={tooltip} />
+      <CrossedIcon Icon={Icon} crossed={!value} tooltip={tooltip} size={35} />
     </button>
   )
   return { value, setValue, field }

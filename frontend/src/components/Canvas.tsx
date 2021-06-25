@@ -8,7 +8,7 @@ import {
   IoArrowBackSharp,
   IoSettingsSharp,
 } from 'react-icons/io5'
-import { Song, SungNote, Note } from '../types/types'
+import { Song, SungNote, Note, ScoreInfo } from '../types/types'
 import drawPitch from '../utils/drawPitch'
 import { Link } from 'react-router-dom'
 
@@ -31,6 +31,10 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
   const [stopped, setStopped] = useState(true)
   const [sungNotes, setSungNotes] = useState<SungNote[]>([])
   const [currentWholeBeat, setCurrentWholeBeat] = useState<number>(0)
+  const [mouseLastMove, setMouseLastMove] = useState(0)
+  const [mouseOnButton, setMouseOnButton] = useState(false)
+  const [time, setTime] = useState(0)
+  const [scoreInfo, setScoreInfo] = useState<ScoreInfo>({ score: 0, hitNotes: 0, missedNotes: 0 })
 
   const canvasRef = useRef(null)
 
@@ -45,11 +49,15 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
       note.currentBeat,
       sungNotes,
       setSungNotes,
-      { width: width / 2, height },
+      { width: width, height },
       notePages,
-      lyricPlayMode ? 12 : 1
+      lyricPlayMode ? 12 : 1,
+      scoreInfo,
+      setScoreInfo
     )
-  }, [note, sungNotes, width, height, notePages, lyricPlayMode])
+  }, [note, sungNotes, width, height, notePages, lyricPlayMode, scoreInfo])
+
+  console.log(scoreInfo)
 
   useEffect(() => {
     setSungNotes((notes) => [...notes, { name: note.name, wholeBeat: currentWholeBeat }])
@@ -64,7 +72,11 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
   }, [startTime])
 
   const handleReady = (event: any) => {
-    setPlayer(event.target)
+    const newPlayer = event.target
+    setPlayer(newPlayer)
+    if (lyricPlayMode) {
+      handlePlayAndSkip(newPlayer)
+    }
   }
 
   const start = () => {
@@ -113,9 +125,10 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
     cancelAnimationFrame(animationId)
   }
 
-  const handlePlay = () => {
+  const handlePlay = (newPlayer?: any) => {
     setStopped(false)
-    player.playVideo()
+    const playerToUse = newPlayer || player
+    playerToUse.playVideo()
   }
 
   const handlePause = () => {
@@ -123,25 +136,40 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
     player.pauseVideo()
   }
 
-  const handleSkip = (value: number) => {
-    player.pauseVideo()
+  const handleSkip = (value: number, newPlayer?: any) => {
+    const playerToUse = newPlayer || player
+    playerToUse.pauseVideo()
     const timeNow = document.timeline.currentTime
     setPauseTime(timeNow)
     const newStartTime = Math.floor(value / 1000)
-    player.seekTo(newStartTime)
+    playerToUse.seekTo(newStartTime)
     if (timeNow) {
       setSavedStartTime(timeNow - newStartTime * 1000)
     }
-    player.playVideo()
+    playerToUse.playVideo()
   }
 
-  const handlePlayAndSkip = () => {
-    handlePlay()
-    handleSkip(gap)
+  const handlePlayAndSkip = (newPlayer?: any) => {
+    handlePlay(newPlayer)
+    handleSkip(gap, newPlayer)
   }
+
+  const handleMouseMove = () => {
+    setMouseLastMove(document.timeline.currentTime || 0)
+  }
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setTime((prevTime) => prevTime + 1000)
+    }, 1000)
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [])
+
+  const buttonsAreHidden = !mouseOnButton && time - mouseLastMove > 2000
 
   return (
-    <div style={{ width, height }} className="canvasContainer">
+    <div style={{ width, height }} className="canvasContainer" onMouseMove={handleMouseMove}>
       <div>
         <div style={{ pointerEvents: 'none', visibility: stopped ? 'hidden' : 'visible' }}>
           <YouTube
@@ -165,14 +193,16 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
         </div>
         {stopped && <h1 className="absCenter">PAUSED</h1>}
       </div>
-      {
-        <div className="playControls" style={{ zIndex: 500 }}>
+      <div className={buttonsAreHidden ? 'fadeOut' : 'fadeIn'}>
+        <div className="playControls">
           {player &&
             (lyricPlayMode ? (
               <>
                 <button
                   className="bigButton"
                   onClick={() => (stopped ? handlePlayAndSkip() : handlePause())}
+                  onMouseEnter={() => setMouseOnButton(true)}
+                  onMouseLeave={() => setMouseOnButton(false)}
                 >
                   {stopped ? <IoPlaySharp size={30} /> : <IoPauseSharp size={30} />}
                 </button>
@@ -182,30 +212,44 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
                 <button
                   className="bigButton"
                   onClick={() => (stopped ? handlePlay() : handlePause())}
+                  onMouseEnter={() => setMouseOnButton(true)}
+                  onMouseLeave={() => setMouseOnButton(false)}
                 >
                   {stopped ? <IoPlaySharp size={30} /> : <IoPauseSharp size={30} />}
                 </button>
-                <button className="bigButton" onClick={() => handleSkip(gap)}>
+                <button
+                  className="bigButton"
+                  onClick={() => handleSkip(gap)}
+                  onMouseEnter={() => setMouseOnButton(true)}
+                  onMouseLeave={() => setMouseOnButton(false)}
+                >
                   <IoPlaySkipForwardSharp size={30} />
                 </button>
               </>
             ))}
         </div>
-      }
-      <div className="absCenter" style={{ zIndex: 400 }}>
-        <canvas ref={canvasRef} width={width / 2} height={height} />
+        <Link to="/" className="leftSide firstTop">
+          <button
+            className="bigButton"
+            onMouseEnter={() => setMouseOnButton(true)}
+            onMouseLeave={() => setMouseOnButton(false)}
+          >
+            <IoArrowBackSharp size={30} />
+          </button>
+        </Link>
+        <Link to={`/tweak/${songInfo._id}`} className="leftSide secondTop">
+          <button
+            className="bigButton"
+            onMouseEnter={() => setMouseOnButton(true)}
+            onMouseLeave={() => setMouseOnButton(false)}
+          >
+            <IoSettingsSharp size={30} />
+          </button>
+        </Link>
       </div>
-      <div className="vocalBackground"></div>
-      <Link to="/" className="leftSide firstTop">
-        <button className="bigButton">
-          <IoArrowBackSharp size={30} />
-        </button>
-      </Link>
-      <Link to={`/tweak/${songInfo._id}`} className="leftSide secondTop">
-        <button className="bigButton">
-          <IoSettingsSharp size={30} />
-        </button>
-      </Link>
+      <div className="absCenter" style={{ zIndex: 400 }}>
+        <canvas ref={canvasRef} width={width} height={height} />
+      </div>
     </div>
   )
 }

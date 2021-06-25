@@ -46,6 +46,7 @@ export interface Song {
 }
 
 export interface NotePageNote {
+  type: 'normal' | 'golden' | 'free'
   beat: number
   length: number
   note: number
@@ -57,4 +58,10 @@ export interface NotePage {
   startBeat: number
   endBeat: number
   notes: NotePageNote[]
+}
+
+export interface ScoreInfo {
+  score: number
+  hitNotes: number
+  missedNotes: number
 }
