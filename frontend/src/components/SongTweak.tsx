@@ -75,23 +75,6 @@ const SongTweak = () => {
       setParsedID(parsedIDTemp)
     }
   }
-  /*
-  const handleReady = (event: any) => {
-    const newPlayer = event.target
-    setPlayer(newPlayer)
-    if (newPlayer && oldStartTime) {
-      newPlayer.seekTo(oldStartTime / 1000)
-      newPlayer.pauseVideo()
-    }
-  }
-
-  const setTime = () => {
-    const time = player.getCurrentTime()
-    if (time) {
-      setStartTime(time * 1000)
-    }
-  }
-  */
 
   const handleSubmit = () => {
     updateVideoInfo({ id, gap: startTime, videoId: parsedID }).then(() => {
