@@ -26,6 +26,8 @@ const parseNotes = (text) => {
     }
   })
 
+  songInfo.language = songInfo.language ||"English"
+
   const notePages = []
   let currentNotes = []
   textByLine.map((text) => {

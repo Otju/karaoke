@@ -7,6 +7,12 @@
   --warningColor: rgb(170, 170, 5);
 }
 
+html,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
@@ -14,18 +20,20 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--backgroundColor);
+  height: 100%;
 }
 
 .App {
   text-align: center;
   color: var(--textPrimaryColor);
+  height: 100%;
 }
 
 .absCenter {
   position: absolute;
   left: 50%;
   transform: translate(-50%, -50%);
-  top: 45%;
+  top: 50%;
 }
 
 .absCenterX {
@@ -33,6 +41,17 @@ body {
   left: 50%;
   transform: translate(-50%, 0);
   top: 0%;
+}
+
+iframe {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+
+.fullSizeYtPlayer {
+  height: 100vh;
 }
 
 .vocalBackground {
@@ -56,8 +75,13 @@ button {
 .bigButton {
   padding: 20px;
   font-size: 16px;
-  border-radius: 10%;
+  border-radius: 10px;
   margin: 4px 2px;
+}
+
+.skipButton {
+  border-radius: 10px;
+  margin: 2px;
 }
 
 .playControls {
@@ -157,6 +181,9 @@ li:hover {
   margin-left: auto;
   margin-right: auto;
   position: relative;
+  height: 100vh;
+  width: 100vw;
+  background-color: black;
 }
 
 .inputContainer {
@@ -197,7 +224,6 @@ input:focus {
   justify-content: center;
   align-items: center;
   align-content: center;
-  margin-top: 20px;
 }
 
 .fadeIn {
@@ -213,15 +239,23 @@ input:focus {
 }
 
 .percentageScore {
-  animation: percentageFadeOut ease 3s forwards;
+  animation: fadeOutAnimation ease 3s forwards;
 }
 
-@keyframes percentageFadeOut {
+.videoPauseLogo {
+  animation: fadeOutAnimation ease 1s forwards;
+}
+
+@keyframes fadeOutAnimation {
   0% {
+    opacity: 0;
+  }
+  30% {
     opacity: 1;
   }
   100% {
     opacity: 0;
+    transform: scale(1.5, 1.5);
   }
 }
 
@@ -237,4 +271,26 @@ input:focus {
   display: flex;
   flex-direction: column;
   padding: 10px;
+}
+
+.scrollDiv {
+  border: 2px solid var(--textPrimaryColor);
+  border-radius: 5px;
+}
+
+.pauseBackground {
+  background-color: rgba(0, 0, 0, 0.7);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 450;
+}
+
+.syncControls {
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  top: 2%;
 }

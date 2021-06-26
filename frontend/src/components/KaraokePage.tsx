@@ -40,7 +40,6 @@ const KaraokePage = ({ voice, tuner }: props) => {
         width={width}
         height={height - 10}
       />
-      <div className="vocalBackground"></div>
     </>
   )
 }

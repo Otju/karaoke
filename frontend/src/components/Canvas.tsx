@@ -211,104 +211,106 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
   const scoreText = getScoreText(scoreInfo.percentageOnPage)
 
   return (
-    <div style={{ width, height }} className="canvasContainer" onMouseMove={handleMouseMove}>
-      <div>
-        <div style={{ pointerEvents: 'none', visibility: stopped ? 'hidden' : 'visible' }}>
-          <YouTube
-            videoId={videoId}
-            onReady={handleReady}
-            opts={{
-              height: height.toString(),
-              width: width.toString(),
-              playerVars: {
-                controls: 0,
-                disablekb: 1,
-                iv_load_policy: 3,
-                modestbranding: 1,
-                showinfo: 0,
-                rel: 0,
-              },
-            }}
-            onPlay={start}
-            onPause={stop}
-          />
+    <div className="canvasContainer" onMouseMove={handleMouseMove}>
+      <div
+        style={{
+          pointerEvents: 'none',
+          visibility: stopped ? 'hidden' : 'visible',
+        }}
+      >
+        <YouTube
+          videoId={videoId}
+          onReady={handleReady}
+          opts={{
+            height: height.toString(),
+            width: width.toString(),
+            playerVars: {
+              controls: 0,
+              disablekb: 1,
+              iv_load_policy: 3,
+              modestbranding: 1,
+              showinfo: 0,
+              rel: 0,
+            },
+          }}
+          onPlay={start}
+          onPause={stop}
+          className="fullSizeYtPlayer"
+        />
+      </div>
+      {stopped ? (
+        <div className="absCenter pauseBackground">
+          <IoPauseSharp size={70} className="videoPauseLogo" key={pauseTime} />
         </div>
-        {stopped && <h1 className="absCenter">PAUSED</h1>}
-        <div className="scoreBox">
-          <span>Score: {scoreInfo.score.toFixed(0)}</span>
+      ) : (
+        <div className="absCenter">
+          <IoPlaySharp size={70} className="videoPauseLogo" key={pauseTime} />
+        </div>
+      )}
+      <div className="scoreBox">
+        <span>Score: {scoreInfo.score.toFixed(0)}</span>
 
+        {scoreInfo.addedAmount !== undefined && scoreText && (
+          <span className="percentageScore" key={scoreInfo.missedNotes + scoreInfo.hitNotes}></span>
+        )}
+        <span className="percentageScore" key={scoreInfo.missedNotes + scoreInfo.hitNotes}>
           {scoreInfo.addedAmount !== undefined && scoreText && (
-            <span
-              className="percentageScore"
-              key={scoreInfo.missedNotes + scoreInfo.hitNotes}
-            ></span>
+            <b style={{ color: scoreText[1] }}>+ {scoreInfo.addedAmount.toFixed(0)}</b>
           )}
-          <span className="percentageScore" key={scoreInfo.missedNotes + scoreInfo.hitNotes}>
-            {scoreInfo.addedAmount !== undefined && scoreText && (
-              <b style={{ color: scoreText[1] }}>+ {scoreInfo.addedAmount.toFixed(0)}</b>
-            )}
-            <br />
-            {scoreText && <b style={{ color: scoreText[1] }}>{scoreText[0]}</b>}
-          </span>
-        </div>
+          <br />
+          {scoreText && <b style={{ color: scoreText[1] }}>{scoreText[0]}</b>}
+        </span>
       </div>
       <div className={buttonsAreHidden ? 'fadeOut' : 'fadeIn'}>
         <div className="playControls">
-          {player &&
-            (lyricPlayMode ? (
-              <>
-                <button
-                  className="bigButton"
-                  onClick={() => (stopped ? handlePlayAndSkip() : handlePause())}
-                  onMouseEnter={() => setMouseOnButton(true)}
-                  onMouseLeave={() => setMouseOnButton(false)}
-                >
-                  {stopped ? <IoPlaySharp size={30} /> : <IoPauseSharp size={30} />}
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  className="bigButton"
-                  onClick={() => (stopped ? handlePlay() : handlePause())}
-                  onMouseEnter={() => setMouseOnButton(true)}
-                  onMouseLeave={() => setMouseOnButton(false)}
-                >
-                  {stopped ? <IoPlaySharp size={30} /> : <IoPauseSharp size={30} />}
-                </button>
-                <button
-                  className="bigButton"
-                  onClick={() => handleSkip(gap)}
-                  onMouseEnter={() => setMouseOnButton(true)}
-                  onMouseLeave={() => setMouseOnButton(false)}
-                >
-                  <IoPlaySkipForwardSharp size={30} />
-                </button>
-              </>
-            ))}
+          {player && !lyricPlayMode && (
+            <>
+              <button
+                className="bigButton"
+                onClick={() => (stopped ? handlePlay() : handlePause())}
+                onMouseEnter={() => setMouseOnButton(true)}
+                onMouseLeave={() => setMouseOnButton(false)}
+              >
+                {stopped ? <IoPlaySharp size={30} /> : <IoPauseSharp size={30} />}
+              </button>
+              <button
+                className="bigButton"
+                onClick={() => handleSkip(gap)}
+                onMouseEnter={() => setMouseOnButton(true)}
+                onMouseLeave={() => setMouseOnButton(false)}
+              >
+                <IoPlaySkipForwardSharp size={30} />
+              </button>
+            </>
+          )}
         </div>
-        <Link to="/" className="leftSide firstTop">
-          <button
-            className="bigButton"
-            onMouseEnter={() => setMouseOnButton(true)}
-            onMouseLeave={() => setMouseOnButton(false)}
-          >
-            <IoArrowBackSharp size={30} />
-          </button>
-        </Link>
-        <Link to={`/tweak/${songInfo._id}`} className="leftSide secondTop">
-          <button
-            className="bigButton"
-            onMouseEnter={() => setMouseOnButton(true)}
-            onMouseLeave={() => setMouseOnButton(false)}
-          >
-            <IoSettingsSharp size={30} />
-          </button>
-        </Link>
+        {!lyricPlayMode && (
+          <>
+            <Link to="/" className="leftSide firstTop">
+              <button
+                className="bigButton"
+                onMouseEnter={() => setMouseOnButton(true)}
+                onMouseLeave={() => setMouseOnButton(false)}
+              >
+                <IoArrowBackSharp size={30} />
+              </button>
+            </Link>
+            <Link to={`/tweak/${songInfo._id}`} className="leftSide secondTop">
+              <button
+                className="bigButton"
+                onMouseEnter={() => setMouseOnButton(true)}
+                onMouseLeave={() => setMouseOnButton(false)}
+              >
+                <IoSettingsSharp size={30} />
+              </button>
+            </Link>
+          </>
+        )}
       </div>
       <div className="absCenter" style={{ zIndex: 400 }}>
         <canvas ref={canvasRef} width={width} height={height} />
       </div>
+      <div className="vocalBackground"></div>
     </div>
   )
 }

@@ -99,8 +99,8 @@ const drawPitch = (
     const textX = centerOfCanvas - totalWidth / 2
 
     const nextPageLyricsX = centerOfCanvas - ctx.measureText(nextPageLyrics).width / 2
-    const firstRowY = canvasheight - 50
-    const secondRowY = canvasheight - 10
+    const firstRowY = canvasheight - 80
+    const secondRowY = canvasheight - 40
     ctx.fillStyle = 'red'
     ctx.fillText(filledLyrics, textX, firstRowY)
     ctx.fillStyle = 'white'

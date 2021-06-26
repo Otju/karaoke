@@ -1,12 +1,11 @@
 import { useQuery, useMutation } from 'urql'
-import { useParams, useHistory } from 'react-router-dom'
 import { SongQuery } from '../graphql/queries'
 import { UpdateVideoInfo } from '../graphql/mutations'
 import { Song } from '../types/types'
 import React, { useState } from 'react'
 import { useEffect } from 'react'
-import Canvas from './Canvas'
-import SkipButton from './SkipButton'
+import SyncPage from './SyncPage'
+import { Switch, Route, Link, useParams, useHistory } from 'react-router-dom'
 
 const SongTweak = () => {
   const [videoIdField, setVideoIdField] = useState('')
@@ -86,66 +85,75 @@ const SongTweak = () => {
     setStartTime((startTime || 0) + amount * 1000)
   }
 
+  const ytLink = `https://www.youtube.com/results?search_query=${song.artist.replaceAll(
+    ' ',
+    '+'
+  )}+${song.title.replaceAll(' ', '+')}+official+music+video`
+
+  if (!song.videoId && !parsedID) {
+    history.push(`/tweak/${id}/videoId`)
+    return null
+  }
+
+  const handleIdReset = () => {
+    history.push(`/tweak/${id}/videoId`)
+    setParsedID('')
+  }
+
   return (
-    <div>
-      {!parsedID ? (
+    <Switch>
+      <Route path="/tweak/:id/videoId">
         <div>
           {isInvalid && <h2>INVALID ID</h2>}
           <input
-            placeholder="Paste YouTube link here"
+            style={{ width: 500 }}
+            placeholder="Paste YouTube link here (ex. https://www.youtube.com/watch?v=dQw4w9WgXcQ)"
             onChange={handleChange}
             value={videoIdField}
           />
           <button className="bigButton" onClick={handleSet}>
             Select link
           </button>
-          <a
-            target="_blank"
-            rel="noreferrer"
-            href={`https://www.youtube.com/results?search_query=${song.artist.replaceAll(
-              ' ',
-              '+'
-            )}+${song.title.replaceAll(' ', '+')}+official+music+video`}
-          >
-            Go to YouTube with search
-          </a>
+          <p>
+            <a target="_blank" rel="noreferrer" href={ytLink}>
+              Youtube search for video: <br />
+              <span style={{ textDecoration: 'underline' }}>{ytLink}</span>
+            </a>
+          </p>
         </div>
-      ) : (
+      </Route>
+      <Route path="/tweak/:id/gap">
+        <SyncPage
+          startTime={startTime}
+          handleTimeChange={handleTimeChange}
+          song={song}
+          parsedID={parsedID}
+          id={id}
+        />
+      </Route>
+      <Route path="/tweak/:id">
         <div>
-          <div>
+          <h3>
             YouTube video ID: {parsedID}
-            <button className="bigButton" onClick={() => setParsedID('')}>
+            <button className="bigButton" onClick={handleIdReset}>
               Change
             </button>
-          </div>
+          </h3>
+          <h3>
+            Vocals start at: {(startTime / 1000).toFixed(2)}s
+            <Link to={`/tweak/${id}/gap`}>
+              <button className="bigButton">Change</button>
+            </Link>
+          </h3>
+          <br />
           <div>
-            <SkipButton amount={-10} onClick={handleTimeChange} />
-            <SkipButton amount={-1} onClick={handleTimeChange} />
-            <SkipButton amount={-0.1} onClick={handleTimeChange} />
-            <SkipButton amount={-0.01} onClick={handleTimeChange} />
-            Start time: {(startTime / 1000).toFixed(2)}s
-            <SkipButton amount={0.01} onClick={handleTimeChange} />
-            <SkipButton amount={0.1} onClick={handleTimeChange} />
-            <SkipButton amount={1} onClick={handleTimeChange} />
-            <SkipButton amount={10} onClick={handleTimeChange} />
-          </div>
-          <button className="bigButton" onClick={handleSubmit}>
-            Submit
-          </button>
-          <div className="relative">
-            <Canvas
-              lyricPlayMode={true}
-              voice={null}
-              tuner={null}
-              songInfo={{ ...song, gap: startTime, videoId: parsedID }}
-              startTime={startTime}
-              width={1000}
-              height={500}
-            />
+            <button className="bigButton" onClick={handleSubmit}>
+              Ready!
+            </button>
           </div>
         </div>
-      )}
-    </div>
+      </Route>
+    </Switch>
   )
 }
 
