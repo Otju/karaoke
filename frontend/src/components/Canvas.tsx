@@ -248,18 +248,10 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
         </div>
       )}
       <div className="scoreBox">
-        <span>Score: {scoreInfo.score.toFixed(0)}</span>
-
-        {scoreInfo.addedAmount !== undefined && scoreText && (
-          <span className="percentageScore" key={scoreInfo.missedNotes + scoreInfo.hitNotes}></span>
-        )}
-        <span className="percentageScore" key={scoreInfo.missedNotes + scoreInfo.hitNotes}>
-          {scoreInfo.addedAmount !== undefined && scoreText && (
-            <b style={{ color: scoreText[1] }}>+ {scoreInfo.addedAmount.toFixed(0)}</b>
-          )}
-          <br />
+        <span className="textBackground">{scoreInfo.score.toFixed(0)}</span>
+        <div className="percentageScore" key={scoreInfo.missedNotes + scoreInfo.hitNotes}>
           {scoreText && <b style={{ color: scoreText[1] }}>{scoreText[0]}</b>}
-        </span>
+        </div>
       </div>
       <div className={buttonsAreHidden ? 'fadeOut' : 'fadeIn'}>
         <div className="playControls">

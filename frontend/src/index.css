@@ -260,17 +260,11 @@ input:focus {
 }
 
 .scoreBox {
-  background-color: rgba(0, 0, 0, 0.5);
-  width: 160px;
-  height: 80px;
   position: absolute;
   right: 20%;
-  top: 10%;
-  border-radius: 20px;
-  font-size: 20px;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
+  top: 30%;
+  font-size: 30px;
+  text-shadow: gray 0px 0px 10px;
 }
 
 .scrollDiv {
