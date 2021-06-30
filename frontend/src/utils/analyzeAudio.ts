@@ -7,7 +7,7 @@ interface vars {
 }
 
 const analyseAudio = ({ sampleRate, audioData }: vars) => {
-  const detectPitch = Pitchfinder.YIN({ sampleRate })
+  const detectPitch = Pitchfinder.DynamicWavelet({ sampleRate })
   const frequency = detectPitch(audioData)
   if (frequency === null) {
     return null

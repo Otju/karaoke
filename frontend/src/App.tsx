@@ -3,65 +3,14 @@ import { BrowserRouter as Router, Switch, Route } from 'react-router-dom'
 import SongSelect from './components/SongSelect'
 import KaraokePage from './components/KaraokePage'
 import SongTweak from './components/SongTweak'
-import { useEffect } from 'react'
-import analyzeAudio from './utils/analyzeAudio'
-import { useReactMediaRecorder } from 'react-media-recorder'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import useMic from './hooks/useMic'
 
-const audioContext = new AudioContext()
 const App = () => {
   const [deviceIds, setDeviceIds] = useState<string[]>([])
-  console.log({ deviceId: deviceIds[0] })
 
-  const { status, startRecording, mediaBlobUrl, stopRecording } = useReactMediaRecorder({
-    audio: true,
-  })
-
-  const process = async (url: string) => {
-    // Load the blob.
-    const response = await fetch(url)
-    const arrayBuffer = await response.arrayBuffer()
-    // Decode the audio.
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-    const audioData = audioBuffer.getChannelData(0)
-    // Send the audio data to the audio processing worker.
-    const res = analyzeAudio({
-      sampleRate: audioBuffer.sampleRate,
-      audioData,
-    })
-    console.log(res)
-    return res
-  }
-
-  const handleStop = () => {
-    if (status === 'recording') {
-      stopRecording()
-    }
-    console.log('4', status)
-    console.log('MEDIA', mediaBlobUrl)
-    if (mediaBlobUrl) {
-      console.log(process(mediaBlobUrl))
-    }
-  }
-
-  /*
-  const listen = () => {
-    startRecording()
-    console.log('1', status)
-    setTimeout(() => handleStop(), 500)
-    console.log('2', status)
-    // Every 500ms, send whatever has been recorded to the audio processor.
-    // This can't be done with `mediaRecorder.start(ms)` because the
-    // `AudioContext` may fail to decode the audio data when sent in parts.
-    setInterval(() => {
-      startRecording()
-      console.log('3', status)
-      setTimeout(() => handleStop(), 500)
-    }, 1000)
-  }
-  */
-
-  console.log(status)
+  const { currentlySungNote: snowBallNote } = useMic({ deviceId: deviceIds[0] })
+  const { currentlySungNote: headphoneNote } = useMic({ deviceId: deviceIds[1] })
 
   useEffect(() => {
     async function getMedia() {
@@ -77,7 +26,7 @@ const App = () => {
           device.label.toLowerCase().includes('snowball')
         )?.deviceId
         const idTwo = devices.find((device) =>
-          device.label.toLowerCase().includes('array')
+          device.label.toLowerCase().includes('headset')
         )?.deviceId
         if (idOne && idTwo) {
           setDeviceIds([idOne, idTwo])
@@ -88,8 +37,6 @@ const App = () => {
     }
     getMedia()
   }, [])
-
-  console.log(mediaBlobUrl)
 
   return (
     <Router>
@@ -102,8 +49,9 @@ const App = () => {
             <SongTweak />
           </Route>
           <Route path="/">
-            <button onClick={startRecording}>RECORD</button>
-            <button onClick={handleStop}>RECORD</button>
+            <div>Snow {snowBallNote ? snowBallNote.key + snowBallNote.octave : '?'}</div>
+            <div>Head {headphoneNote ? headphoneNote.key + headphoneNote.octave : '?'}</div>
+            <button>RECORD</button>
             <SongSelect />
           </Route>
         </Switch>
