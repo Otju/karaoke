@@ -8,23 +8,21 @@ import {
   IoArrowBackSharp,
   IoSettingsSharp,
 } from 'react-icons/io5'
-import { Song, SungNote, Note, ScoreInfo } from '../types/types'
+import { Song, SungNote, ScoreInfo, Player } from '../types/types'
 import drawPitch from '../utils/drawPitch'
 import { Link } from 'react-router-dom'
 
 interface props {
-  voice: any
-  tuner: any
   songInfo: Song
-  lyricPlayMode?: boolean
   startTime?: number
   width: number
   height: number
+  players?: Player[]
 }
 
-const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTime }: props) => {
-  const [note, setNote] = useState<Note>({ name: '', currentBeat: -40 })
+const Canvas = ({ players, songInfo, width, height, startTime }: props) => {
   const [animationId, setAnimationId] = useState(0)
+  const [currentBeat, setCurrentBeat] = useState(0)
   const [savedStartTime, setSavedStartTime] = useState<number | null>(null)
   const [pauseTime, setPauseTime] = useState<number | null>(null)
   const [player, setPlayer] = useState<any>()
@@ -40,6 +38,10 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
     missedNotes: 0,
     scorePerNote: 1,
   })
+
+  const lyricPlayMode = Boolean(!players)
+
+  const note = !players ? 'A' : players[0].currentlySungNote?.key
 
   const canvasRef = useRef(null)
 
@@ -67,7 +69,7 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
     const ctx = canvas.getContext('2d')
     drawPitch(
       ctx,
-      note.currentBeat,
+      currentBeat,
       sungNotes,
       setSungNotes,
       { width: width, height },
@@ -76,10 +78,10 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
       scoreInfo,
       setScoreInfo
     )
-  }, [note, sungNotes, width, height, notePages, lyricPlayMode, scoreInfo])
+  }, [note, sungNotes, width, height, notePages, lyricPlayMode, scoreInfo, currentBeat])
 
   useEffect(() => {
-    setSungNotes((notes) => [...notes, { name: note.name, wholeBeat: currentWholeBeat }])
+    setSungNotes((notes) => [...notes, { name: note, wholeBeat: currentWholeBeat }])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentWholeBeat])
 
@@ -99,10 +101,6 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
   }
 
   const start = () => {
-    if (!lyricPlayMode) {
-      voice.play()
-      tuner.updatePitch()
-    }
     const timeNow = document.timeline.currentTime
     if (pauseTime && timeNow) {
       if (savedStartTime) {
@@ -124,13 +122,7 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
       if (newWholeBeat !== currentWholeBeat) {
         setCurrentWholeBeat(newWholeBeat)
       }
-      let newNote
-      if (lyricPlayMode) {
-        newNote = { name: 'A', currentBeat }
-      } else {
-        newNote = { name: tuner.noteName, currentBeat }
-      }
-      setNote(newNote)
+      setCurrentBeat(currentBeat)
       setAnimationId(requestAnimationFrame((callback) => render(callback, startTime)))
     }
   }
@@ -138,9 +130,6 @@ const Canvas = ({ voice, tuner, songInfo, lyricPlayMode, width, height, startTim
   const stop = () => {
     const timeNow = document.timeline.currentTime
     setPauseTime(timeNow)
-    if (!lyricPlayMode) {
-      tuner.stopUpdatingPitch()
-    }
     cancelAnimationFrame(animationId)
   }
 

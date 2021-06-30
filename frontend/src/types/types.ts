@@ -6,6 +6,17 @@ export interface Octave {
   octaveNotes: OctaveNote[]
 }
 
+export interface Player {
+  isEnabled: boolean
+  currentlySungNote: CurrentlySungNote | null
+}
+
+export interface CurrentlySungNote {
+  frequency: number
+  key: string
+  octave: number
+}
+
 export interface OctaveNote {
   name: string
   freq: number
@@ -22,7 +33,7 @@ export interface Note {
 }
 
 export interface SungNote {
-  name: string
+  name: string | undefined
   wholeBeat: number
 }
 

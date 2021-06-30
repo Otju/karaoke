@@ -2,15 +2,21 @@ import { useQuery } from 'urql'
 import { useParams, useHistory } from 'react-router-dom'
 import { SongQuery } from '../graphql/queries'
 import { getWindowDimensions } from '../hooks/useWindowDimensions'
-
 import Canvas from './Canvas'
+import useMic from '../hooks/useMic'
 
 interface props {
-  voice: any
-  tuner: any
+  deviceIds: string[]
 }
 
-const KaraokePage = ({ voice, tuner }: props) => {
+const KaraokePage = ({ deviceIds }: props) => {
+  const Player1 = useMic({ deviceId: deviceIds[0] })
+  const Player2 = useMic({ deviceId: deviceIds[1] })
+  const Player3 = useMic({ deviceId: deviceIds[2] })
+  const Player4 = useMic({ deviceId: deviceIds[3] })
+
+  const players = [Player1, Player2, Player3, Player4]
+
   const { id } = useParams<{ id: string }>()
   const history = useHistory()
 
@@ -33,13 +39,7 @@ const KaraokePage = ({ voice, tuner }: props) => {
 
   return (
     <>
-      <Canvas
-        voice={voice}
-        tuner={tuner}
-        songInfo={data.getSong}
-        width={width}
-        height={height - 10}
-      />
+      <Canvas songInfo={data.getSong} width={width} height={height - 10} players={players} />
     </>
   )
 }

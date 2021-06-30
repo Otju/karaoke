@@ -35,9 +35,6 @@ const SyncPage = ({ startTime, handleTimeChange, song, parsedID, id }: props) =>
       </div>
       <div className="absCenter">
         <Canvas
-          lyricPlayMode={true}
-          voice={null}
-          tuner={null}
           songInfo={{ ...song, gap: startTime, videoId: parsedID }}
           startTime={startTime}
           width={width}

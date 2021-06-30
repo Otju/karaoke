@@ -288,3 +288,9 @@ input:focus {
   flex-direction: column;
   top: 2%;
 }
+
+.settingsPage {
+  display: flex;
+  justify-content: space-around;
+  margin: 5%;
+}

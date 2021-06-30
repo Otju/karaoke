@@ -123,7 +123,7 @@ const drawPitch = (
       return { isRightNote, sungNoteIndex }
     }
 
-    const parseSungNote = (wholeBeat: number, sungNoteName: string) => {
+    const parseSungNote = (wholeBeat: number, sungNoteName: string | undefined) => {
       if (!sungNoteName) return null
       const currentNote = currentNotePage.notes.find(
         ({ beat, length }) => wholeBeat >= beat && wholeBeat < beat + length

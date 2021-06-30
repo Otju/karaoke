@@ -2,12 +2,7 @@ import analyzeAudio from '../utils/analyzeAudio'
 import { useReactMediaRecorder } from 'react-media-recorder'
 import useInterval from './useInterval'
 import { useState, useEffect } from 'react'
-
-interface CurrentlySungNote {
-  frequency: number
-  key: string
-  octave: number
-}
+import { CurrentlySungNote } from '../types/types'
 
 interface props {
   deviceId: string
@@ -16,25 +11,45 @@ interface props {
 const audioContext = new AudioContext()
 
 const useMic = ({ deviceId }: props) => {
-  const [currentlySungNote, setCurrentlySungNote] = useState<CurrentlySungNote | null>()
+  const isEnabled = Boolean(deviceId && deviceId !== 'disabled')
+
+  const [currentlySungNote, setCurrentlySungNote] = useState<CurrentlySungNote | null>(null)
 
   const { status, startRecording, mediaBlobUrl, stopRecording } = useReactMediaRecorder({
     audio: { deviceId },
   })
 
+  const calcInterval = 100
+
+  useEffect(() => {
+    if (mediaBlobUrl) {
+      process(mediaBlobUrl)
+    }
+  }, [mediaBlobUrl])
+
+  useInterval(() => {
+    if (status === 'recording') {
+      handleStop()
+    } else if (isEnabled) {
+      handleStart()
+    }
+  }, calcInterval)
+
   const process = async (url: string) => {
-    // Load the blob.
-    const response = await fetch(url)
-    const arrayBuffer = await response.arrayBuffer()
-    // Decode the audio.
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-    const audioData = audioBuffer.getChannelData(0)
-    // Send the audio data to the audio processing worker.
-    const note = analyzeAudio({
-      sampleRate: audioBuffer.sampleRate,
-      audioData,
-    })
-    setCurrentlySungNote(note)
+    try {
+      const response = await fetch(url)
+      const arrayBuffer = await response.arrayBuffer()
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      const audioData = audioBuffer.getChannelData(0)
+      // Send the audio data to the audio processing worker.
+      const note = analyzeAudio({
+        sampleRate: audioBuffer.sampleRate,
+        audioData,
+      })
+      if (note) {
+        setCurrentlySungNote(note)
+      }
+    } catch {}
   }
 
   const handleStop = () => {
@@ -47,21 +62,7 @@ const useMic = ({ deviceId }: props) => {
     startRecording()
   }
 
-  useEffect(() => {
-    if (mediaBlobUrl) {
-      process(mediaBlobUrl)
-    }
-  }, [mediaBlobUrl])
-
-  useInterval(() => {
-    if (status === 'recording') {
-      handleStop()
-    } else {
-      handleStart()
-    }
-  }, 250)
-
-  return { currentlySungNote }
+  return { currentlySungNote, isEnabled }
 }
 
 export default useMic
