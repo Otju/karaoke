@@ -55,5 +55,8 @@
   "devDependencies": {
     "@types/point-in-polygon": "^1.0.0",
     "@types/react-router-dom": "^5.1.7"
-  }
+  },
+  "eslintIgnore": [
+    "wad.js"
+  ]
 }

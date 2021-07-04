@@ -1,5 +1,5 @@
 import { Max, Min } from 'class-validator'
-import { Field, InputType } from 'type-graphql'
+import { Field, InputType, Int } from 'type-graphql'
 
 @InputType()
 export class NotePageNoteInput {
@@ -50,14 +50,23 @@ export class NewSongInput {
   @Field()
   language?: string
 
-  @Field({ nullable: true })
+  @Field(() => Int, { nullable: true })
   year?: number
 
   @Field({ nullable: true })
   edition?: string
 
+  @Field(() => [String], { nullable: true })
+  genres: string[]
+
+  @Field(() => [String], { nullable: true })
+  styles?: string[]
+
   @Field({ nullable: true })
-  genre?: string
+  smallImage?: string
+
+  @Field({ nullable: true })
+  bigImage?: string
 
   @Field()
   bpm: number

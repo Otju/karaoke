@@ -16,7 +16,7 @@ interface BeatToX {
 }
 
 interface NoteToY {
-  canvasheight: number
+  height: number
   noteBottomMargin?: number
   noteTopMargin?: number
   note: number
@@ -33,9 +33,8 @@ const beatToX = ({ relativeBeat, beatLength, beatMargin }: BeatToX) => {
   return x
 }
 
-const noteToY = ({ canvasheight, noteBottomMargin = 160, noteTopMargin = 200, note }: NoteToY) => {
-  const heightLeft = canvasheight - noteBottomMargin - noteTopMargin
-  const y = noteTopMargin + heightLeft - heightLeft * ((note + 1) / 24)
+const noteToY = ({ height, noteTopMargin = 200, note }: NoteToY) => {
+  const y = noteTopMargin + height - height * ((note + 1) / 24)
   return y
 }
 
@@ -44,17 +43,43 @@ const getSungNoteIndex = (name: string) => {
   return noteNames.findIndex((item) => item === parsedName)
 }
 
+interface DrawDashedLine {
+  ctx: any
+  pattern: number[]
+  startY: number
+  startX: number
+  endX: number
+}
+const drawDashedLine = ({ ctx, pattern, startY, startX, endX }: DrawDashedLine) => {
+  let y = startY
+  ctx.beginPath()
+  ctx.setLineDash(pattern)
+  ctx.moveTo(endX, y)
+  ctx.lineTo(startX, y)
+  ctx.stroke()
+  y += 20
+}
+
+interface marginForPlayer {
+  height: number
+  noteTopMargin: number
+  color: string
+  transparentColor: string
+}
+
 const drawPitch = (
   ctx: any,
   currentBeat: number,
-  sungNotes: SungNote[],
-  setSungNotes: Function,
   pageSize: Dimensions,
   notePages: NotePage[],
   snapAmount: number,
-  scoreInfo: ScoreInfo,
-  setScoreInfo: Function
+  scoreInfo: ScoreInfo[],
+  setScoreInfo: (ScoreInfos: ScoreInfo[]) => void,
+  marginsForPlayers: marginForPlayer[],
+  clearAllSungNotes: () => void,
+  timedSungNotes: SungNote[][]
 ) => {
+  const playerCount = marginsForPlayers.length
   const canvasheight = pageSize.height
   const canvaswidth = pageSize.width
   const currentNotePageIndex = notePages.findIndex(
@@ -73,18 +98,34 @@ const drawPitch = (
     let notFilledLyrics = ''
     let filledLyrics = ''
 
-    currentNotePage.notes.forEach(({ beat, length, note, lyric, type }) => {
-      const relativeBeat = beat - startBeat
-      const x = beatToX({ relativeBeat, beatLength, beatMargin })
-      const y = noteToY({ canvasheight, note })
-      let fillColor = 'grey'
-      if (type === 'golden') {
-        fillColor = 'gold'
-      } else if (type === 'free') {
-        fillColor = 'green'
+    marginsForPlayers.forEach(({ height, noteTopMargin }, i) => {
+      currentNotePage.notes.forEach(({ beat, length, note, type }) => {
+        const relativeBeat = beat - startBeat
+        const x = beatToX({ relativeBeat, beatLength, beatMargin })
+        const y = noteToY({ note, noteTopMargin, height })
+        let fillColor = 'grey'
+        if (type === 'golden') {
+          fillColor = 'gold'
+        } /* else if (type === 'free') {
+          fillColor = 'green'
+        }
+        */
+        ctx.fillStyle = fillColor
+        roundRect(ctx, x, y, length * beatLength, 20, 5, true, false)
+      })
+      if (i !== 0) {
+        ctx.strokeStyle = 'grey'
+        drawDashedLine({
+          ctx,
+          startY: noteTopMargin + height * 0.16,
+          pattern: [10, 10],
+          startX: beatMargin - 100,
+          endX: canvaswidth - beatMargin + 100,
+        })
       }
-      ctx.fillStyle = fillColor
-      roundRect(ctx, x, y, length * beatLength, 20, 5, true, false)
+    })
+
+    currentNotePage.notes.forEach(({ beat, lyric }) => {
       if (currentBeat >= beat) {
         filledLyrics += lyric
       } else {
@@ -123,78 +164,86 @@ const drawPitch = (
       return { isRightNote, sungNoteIndex }
     }
 
-    const parseSungNote = (wholeBeat: number, sungNoteName: string | undefined) => {
+    const parseSungNote = (beat: number, sungNoteName: string | undefined) => {
       if (!sungNoteName) return null
       const currentNote = currentNotePage.notes.find(
-        ({ beat, length }) => wholeBeat >= beat && wholeBeat < beat + length
+        ({ beat: notePageBeat, length }) => beat >= notePageBeat && beat < notePageBeat + length
       )
       if (!currentNote) return null
       const { sungNoteIndex, isRightNote } = calculateIsRightNote(currentNote, sungNoteName)
       return { sungNoteIndex, isRightNote, currentNote }
     }
 
-    sungNotes.forEach(({ wholeBeat, name }) => {
-      const parsed = parseSungNote(wholeBeat, name)
-      if (parsed) {
-        const { sungNoteIndex, isRightNote, currentNote } = parsed
-        const relativeBeat = wholeBeat - startBeat
-        const x = beatToX({ relativeBeat, beatLength, beatMargin })
-        const y = noteToY({ note: sungNoteIndex, canvasheight })
-        ctx.fillStyle = isRightNote ? 'blue' : 'rgba(0, 0, 255, 0.3)'
-        const greyFixedBeatLength = beatLength + (isRightNote ? 1 : 0)
-        const width = 20
-        const { beat, length } = currentNote
-        if (wholeBeat === beat) {
-          //Start of note
-          roundRect(ctx, x, y, greyFixedBeatLength, width, { tl: 5, bl: 5 }, true, false)
-        } else if (wholeBeat === beat + length - 1) {
-          //End of note
-          roundRect(ctx, x, y, greyFixedBeatLength, width, { tr: 5, br: 5 }, true, false)
-        } else {
-          ctx.fillRect(x, y, greyFixedBeatLength, width)
-        }
-      }
-      const isLastBeatOfPage = wholeBeat === currentNotePage.endBeat
-      if (isLastBeatOfPage) {
-        let newScore = scoreInfo
-        let scoreForPage = 0
-        currentNotePage.notes.forEach((currentNote) => {
-          const { beat, length } = currentNote
-          const sungNotesForNote = sungNotes.filter(
-            ({ wholeBeat }) => wholeBeat >= beat && wholeBeat < beat + length
-          )
-          const rightNotesForNote = sungNotesForNote.filter(({ name }) => {
-            if (!name) {
-              return false
-            }
-            const { isRightNote } = calculateIsRightNote(currentNote, name)
-            return isRightNote
-          })
-          const percentageOfRight = rightNotesForNote.length / sungNotesForNote.length
-          if (percentageOfRight > 0.7) {
-            const multiplier = currentNote.type === 'golden' ? 2 : 1
-            const noteScore = currentNote.length * scoreInfo.scorePerNote * multiplier
-            newScore.hitNotes++
-            newScore.score += noteScore
-            scoreForPage += currentNote.length * scoreInfo.scorePerNote * multiplier
+    const newScores: ScoreInfo[] = []
+    timedSungNotes.forEach((sungNotes, i) => {
+      sungNotes.forEach(({ beat, name }) => {
+        const parsed = parseSungNote(beat, name)
+        if (parsed) {
+          const { sungNoteIndex, isRightNote, currentNote } = parsed
+          const relativeBeat = beat - startBeat
+          const x = beatToX({ relativeBeat, beatLength, beatMargin })
+          const { height, noteTopMargin, color, transparentColor } = marginsForPlayers[i]
+          const y = noteToY({ note: sungNoteIndex, noteTopMargin, height })
+          ctx.fillStyle = isRightNote ? color : transparentColor
+          const greyFixedBeatLength = beatLength + (isRightNote ? 1 : 0)
+          const width = 20
+          const { beat: currentNoteBeat, length } = currentNote
+          if (beat === currentNoteBeat) {
+            //Start of note
+            roundRect(ctx, x, y, greyFixedBeatLength, width, { tl: 5, bl: 5 }, true, false)
+          } else if (beat === currentNoteBeat + length - 1) {
+            //End of note
+            roundRect(ctx, x, y, greyFixedBeatLength, width, { tr: 5, br: 5 }, true, false)
           } else {
-            newScore.missedNotes++
+            ctx.fillRect(x, y, greyFixedBeatLength, width)
           }
-        })
-        let maxScoreForPage = 0
-        currentNotePage.notes.forEach(({ type, length }) => {
-          if (type === 'normal') {
-            maxScoreForPage += length
-          } else if (type === 'golden') {
-            maxScoreForPage += length * 2
+        }
+        const isLastBeatOfPage = Math.ceil(beat) === currentNotePage.endBeat
+        if (isLastBeatOfPage) {
+          let newScore = scoreInfo[i]
+          const { scorePerNote } = newScore
+          let scoreForPage = 0
+          currentNotePage.notes.forEach((currentNote) => {
+            const { beat: currentNoteBeat, length } = currentNote
+            const sungNotesForNote = sungNotes.filter(
+              ({ beat }) => beat >= currentNoteBeat && beat < currentNoteBeat + length
+            )
+            const rightNotesForNote = sungNotesForNote.filter(({ name }) => {
+              if (!name) {
+                return false
+              }
+              const { isRightNote } = calculateIsRightNote(currentNote, name)
+              return isRightNote
+            })
+            const percentageOfRight = rightNotesForNote.length / sungNotesForNote.length
+            if (percentageOfRight > 0.7) {
+              const multiplier = currentNote.type === 'golden' ? 2 : 1
+              const noteScore = currentNote.length * scorePerNote * multiplier
+              newScore.hitNotes++
+              newScore.score += noteScore
+              scoreForPage += currentNote.length * scorePerNote * multiplier
+            } else {
+              newScore.missedNotes++
+            }
+          })
+          let maxScoreForPage = 0
+          currentNotePage.notes.forEach(({ type, length }) => {
+            if (type === 'normal') {
+              maxScoreForPage += length
+            } else if (type === 'golden') {
+              maxScoreForPage += length * 2
+            }
+          })
+          maxScoreForPage = maxScoreForPage * scorePerNote
+          newScore.percentageOnPage = scoreForPage / maxScoreForPage
+          newScore.addedAmount = scoreForPage
+          newScores.push(newScore)
+          if (i - 1 === playerCount) {
+            setScoreInfo(newScores)
+            clearAllSungNotes()
           }
-        })
-        maxScoreForPage = maxScoreForPage * scoreInfo.scorePerNote
-        newScore.percentageOnPage = scoreForPage / maxScoreForPage
-        newScore.addedAmount = scoreForPage
-        setScoreInfo(newScore)
-        setSungNotes([])
-      }
+        }
+      })
     })
   }
 }

@@ -39,6 +39,7 @@ const SyncPage = ({ startTime, handleTimeChange, song, parsedID, id }: props) =>
           startTime={startTime}
           width={width}
           height={height}
+          players={[]}
         />
       </div>
     </>

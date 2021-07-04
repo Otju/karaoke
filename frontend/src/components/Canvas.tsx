@@ -8,7 +8,7 @@ import {
   IoArrowBackSharp,
   IoSettingsSharp,
 } from 'react-icons/io5'
-import { Song, SungNote, ScoreInfo, Player } from '../types/types'
+import { Song, ScoreInfo, Player, SungNote } from '../types/types'
 import drawPitch from '../utils/drawPitch'
 import { Link } from 'react-router-dom'
 
@@ -17,31 +17,32 @@ interface props {
   startTime?: number
   width: number
   height: number
-  players?: Player[]
+  players: Player[]
+  lyricPlayMode?: boolean
 }
 
-const Canvas = ({ players, songInfo, width, height, startTime }: props) => {
+const Canvas = ({ players, songInfo, width, height, startTime, lyricPlayMode }: props) => {
   const [animationId, setAnimationId] = useState(0)
   const [currentBeat, setCurrentBeat] = useState(0)
+  const [timedSungNotes, setTimedSungNotes] = useState<SungNote[][]>([[], [], [], []])
   const [savedStartTime, setSavedStartTime] = useState<number | null>(null)
   const [pauseTime, setPauseTime] = useState<number | null>(null)
   const [player, setPlayer] = useState<any>()
   const [stopped, setStopped] = useState(true)
-  const [sungNotes, setSungNotes] = useState<SungNote[]>([])
-  const [currentWholeBeat, setCurrentWholeBeat] = useState<number>(0)
   const [mouseLastMove, setMouseLastMove] = useState(0)
   const [mouseOnButton, setMouseOnButton] = useState(false)
+  const [currentWholeBeat, setCurrentWholeBeat] = useState<number>(0)
   const [time, setTime] = useState(0)
-  const [scoreInfo, setScoreInfo] = useState<ScoreInfo>({
-    score: 0,
-    hitNotes: 0,
-    missedNotes: 0,
-    scorePerNote: 1,
-  })
+  const [scoreInfo, setScoreInfo] = useState<ScoreInfo[]>(
+    [...Array(4)].map(() => ({
+      score: 0,
+      hitNotes: 0,
+      missedNotes: 0,
+      scorePerNote: 1,
+    }))
+  )
 
-  const lyricPlayMode = Boolean(!players)
-
-  const note = !players ? 'A' : players[0].currentlySungNote?.key
+  const playerCount = players ? players.filter((player) => player.isEnabled).length : 1
 
   const canvasRef = useRef(null)
 
@@ -61,7 +62,40 @@ const Canvas = ({ players, songInfo, width, height, startTime }: props) => {
     setScoreInfo((oldInfo) => ({ ...oldInfo, scorePerNote }))
   }, [songInfo])
 
-  const { bpm, notePages, gap, videoId } = songInfo
+  const { bpm: barsPerMinute, notePages, gap, videoId } = songInfo
+
+  const bpm = barsPerMinute * 4
+  const bpms = bpm / 60 / 1000
+
+  const mainMarginBottom = 160
+  const mainMarginTop = 130
+
+  const playerColors = [
+    ['rgb(255, 0, 0)', 'rgba(255, 0, 0, 0.9)'],
+    ['rgb(9, 9, 187)', ' rgba(9, 9, 187, 0.9)'],
+    ['rgb(13, 170, 13)', 'rgba(13, 170, 13, 0.9)'],
+    ['rgb(211, 149, 15)', 'rgba(211, 149, 15, 0.9)'],
+  ]
+  const heightPerPlayer = (height - mainMarginTop - mainMarginBottom) / playerCount
+  const marginsForPlayers = [...Array(playerCount)].map((_, i) => {
+    const height = heightPerPlayer - heightPerPlayer * 0.16
+    const noteTopMargin = mainMarginTop + height * i + heightPerPlayer * 0.08
+    const [color, transparentColor] = playerColors[i]
+    return { height, noteTopMargin, color, transparentColor }
+  })
+
+  const clearAllSungNotes = (players: Player[]) => {
+    players?.forEach((player) => {
+      player.clearSungNotes()
+    })
+    setTimedSungNotes([[], [], [], []])
+  }
+
+  const handleAllAudioTicks = (players: Player[]) => {
+    players?.forEach((player) => {
+      player.handleAudioProcessTick()
+    })
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -70,20 +104,26 @@ const Canvas = ({ players, songInfo, width, height, startTime }: props) => {
     drawPitch(
       ctx,
       currentBeat,
-      sungNotes,
-      setSungNotes,
       { width: width, height },
       notePages,
-      lyricPlayMode ? 12 : 1,
+      lyricPlayMode ? 24 : 1,
       scoreInfo,
-      setScoreInfo
+      setScoreInfo,
+      marginsForPlayers,
+      () => clearAllSungNotes(players),
+      timedSungNotes
     )
-  }, [note, sungNotes, width, height, notePages, lyricPlayMode, scoreInfo, currentBeat])
-
-  useEffect(() => {
-    setSungNotes((notes) => [...notes, { name: note, wholeBeat: currentWholeBeat }])
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentWholeBeat])
+  }, [
+    players,
+    width,
+    height,
+    notePages,
+    lyricPlayMode,
+    scoreInfo,
+    currentBeat,
+    marginsForPlayers,
+    timedSungNotes,
+  ])
 
   useEffect(() => {
     if (startTime && player) {
@@ -101,6 +141,7 @@ const Canvas = ({ players, songInfo, width, height, startTime }: props) => {
   }
 
   const start = () => {
+    clearAllSungNotes(players)
     const timeNow = document.timeline.currentTime
     if (pauseTime && timeNow) {
       if (savedStartTime) {
@@ -116,13 +157,41 @@ const Canvas = ({ players, songInfo, width, height, startTime }: props) => {
 
   const render = (timestamp: number | null, startTime: number | null) => {
     if (timestamp && startTime) {
-      let currentRelativeTime = timestamp - startTime - gap
-      const currentBeat = ((bpm * 4) / 60 / 1000) * currentRelativeTime
-      const newWholeBeat = Math.round(currentBeat)
+      const timeToCurrentBeat = (currentTimeStamp: number) =>
+        (currentTimeStamp - startTime - gap) * bpms
+      const newCurrentBeat = timeToCurrentBeat(timestamp)
+      setCurrentBeat(newCurrentBeat)
+      const newWholeBeat = Math.round(currentBeat / 100)
       if (newWholeBeat !== currentWholeBeat) {
+        console.log(currentBeat / 100)
+        console.log('NEW')
+        if (players[0].sungNotes.length > 0) {
+          console.log(players[0].sungNotes)
+        }
         setCurrentWholeBeat(newWholeBeat)
+        setTimedSungNotes((playersWithNotes) =>
+          playersWithNotes.map((notes, i) => {
+            const { sungNotes } = players[i]
+            const currentTime = new Date().getTime()
+            const newestNoteGroup = sungNotes[sungNotes.length - 1]
+            if (newestNoteGroup && newestNoteGroup.timestamp) {
+              const timeDifference = currentTime - newestNoteGroup.timestamp
+              const beatDifference = bpms * timeDifference
+              const startBeat = currentBeat - beatDifference
+              const newNotes = newestNoteGroup.notes.map(({ key }, i) => {
+                const samplesPerBeat = 4
+                const beatsForward = i * (1 / samplesPerBeat)
+                const beat = startBeat + beatsForward
+                return { name: key, beat }
+              })
+              return [...notes, ...newNotes]
+            } else {
+              return notes
+            }
+          })
+        )
+        handleAllAudioTicks(players)
       }
-      setCurrentBeat(currentBeat)
       setAnimationId(requestAnimationFrame((callback) => render(callback, startTime)))
     }
   }
@@ -196,9 +265,6 @@ const Canvas = ({ players, songInfo, width, height, startTime }: props) => {
       return ['Dude, really?', 'red']
     }
   }
-
-  const scoreText = getScoreText(scoreInfo.percentageOnPage)
-
   return (
     <div className="canvasContainer" onMouseMove={handleMouseMove}>
       <div
@@ -236,12 +302,18 @@ const Canvas = ({ players, songInfo, width, height, startTime }: props) => {
           <IoPlaySharp size={70} className="videoPauseLogo" key={pauseTime} />
         </div>
       )}
-      <div className="scoreBox">
-        <span className="textBackground">{scoreInfo.score.toFixed(0)}</span>
-        <div className="percentageScore" key={scoreInfo.missedNotes + scoreInfo.hitNotes}>
-          {scoreText && <b style={{ color: scoreText[1] }}>{scoreText[0]}</b>}
-        </div>
-      </div>
+      {marginsForPlayers.map(({ noteTopMargin, height, color }, i) => {
+        const { percentageOnPage, score, missedNotes, hitNotes } = scoreInfo[i]
+        const scoreText = getScoreText(percentageOnPage)
+        return (
+          <div className="scoreBox" style={{ top: noteTopMargin + height * 0.16 }}>
+            <span style={{ color }}>{score.toFixed(0)}</span>
+            <div className="percentageScore" key={missedNotes + hitNotes}>
+              {scoreText && <b style={{ color: scoreText[1] }}>{scoreText[0]}</b>}
+            </div>
+          </div>
+        )
+      })}
       <div className={buttonsAreHidden ? 'fadeOut' : 'fadeIn'}>
         <div className="playControls">
           {player && !lyricPlayMode && (

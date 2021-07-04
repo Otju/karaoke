@@ -1,68 +1,56 @@
 import analyzeAudio from '../utils/analyzeAudio'
 import { useReactMediaRecorder } from 'react-media-recorder'
-import useInterval from './useInterval'
-import { useState, useEffect } from 'react'
-import { CurrentlySungNote } from '../types/types'
+import { useState } from 'react'
+import { NoteGroup } from '../types/types'
 
 interface props {
   deviceId: string
+  tempo: number
 }
 
 const audioContext = new AudioContext()
 
-const useMic = ({ deviceId }: props) => {
+const useMic = ({ deviceId, tempo }: props) => {
   const isEnabled = Boolean(deviceId && deviceId !== 'disabled')
 
-  const [currentlySungNote, setCurrentlySungNote] = useState<CurrentlySungNote | null>(null)
+  const [sungNotes, setSungNotes] = useState<NoteGroup[]>([])
+
+  const clearSungNotes = () => setSungNotes([])
 
   const { status, startRecording, mediaBlobUrl, stopRecording } = useReactMediaRecorder({
     audio: { deviceId },
   })
 
-  const calcInterval = 100
-
-  useEffect(() => {
-    if (mediaBlobUrl) {
-      process(mediaBlobUrl)
-    }
-  }, [mediaBlobUrl])
-
-  useInterval(() => {
+  const handleAudioProcessTick = () => {
     if (status === 'recording') {
-      handleStop()
+      stopRecording()
     } else if (isEnabled) {
-      handleStart()
+      startRecording()
+      if (mediaBlobUrl) {
+        processAudio(mediaBlobUrl)
+      }
     }
-  }, calcInterval)
+  }
 
-  const process = async (url: string) => {
+  const processAudio = async (url: string) => {
     try {
+      const timestamp = new Date().getTime()
       const response = await fetch(url)
       const arrayBuffer = await response.arrayBuffer()
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
       const audioData = audioBuffer.getChannelData(0)
-      // Send the audio data to the audio processing worker.
-      const note = analyzeAudio({
+      const newNotes = analyzeAudio({
         sampleRate: audioBuffer.sampleRate,
         audioData,
+        tempo,
       })
-      if (note) {
-        setCurrentlySungNote(note)
+      if (newNotes) {
+        setSungNotes((notes) => [...notes, { notes: newNotes, timestamp }])
       }
     } catch {}
   }
 
-  const handleStop = () => {
-    if (status === 'recording') {
-      stopRecording()
-    }
-  }
-
-  const handleStart = () => {
-    startRecording()
-  }
-
-  return { currentlySungNote, isEnabled }
+  return { sungNotes, isEnabled, clearSungNotes, handleAudioProcessTick }
 }
 
 export default useMic

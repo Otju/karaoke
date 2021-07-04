@@ -4,19 +4,14 @@ import { SongQuery } from '../graphql/queries'
 import { getWindowDimensions } from '../hooks/useWindowDimensions'
 import Canvas from './Canvas'
 import useMic from '../hooks/useMic'
+import { Player } from '../types/types'
 
 interface props {
   deviceIds: string[]
+  audioContext: AudioContext
 }
 
 const KaraokePage = ({ deviceIds }: props) => {
-  const Player1 = useMic({ deviceId: deviceIds[0] })
-  const Player2 = useMic({ deviceId: deviceIds[1] })
-  const Player3 = useMic({ deviceId: deviceIds[2] })
-  const Player4 = useMic({ deviceId: deviceIds[3] })
-
-  const players = [Player1, Player2, Player3, Player4]
-
   const { id } = useParams<{ id: string }>()
   const history = useHistory()
 
@@ -26,6 +21,15 @@ const KaraokePage = ({ deviceIds }: props) => {
   })
 
   const { data, fetching, error } = result
+
+  const tempo = data ? data.getSong.bpm * 60 : 130
+
+  const Player1 = useMic({ deviceId: deviceIds[0], tempo })
+  const Player2 = useMic({ deviceId: deviceIds[1], tempo })
+  const Player3 = useMic({ deviceId: deviceIds[2], tempo })
+  const Player4 = useMic({ deviceId: deviceIds[3], tempo })
+
+  const players: Player[] = [Player1, Player2, Player3, Player4]
 
   if (fetching) return <p>Loading...</p>
   if (error) return <p>Oh no... {error.message}</p>
@@ -37,11 +41,7 @@ const KaraokePage = ({ deviceIds }: props) => {
 
   const { width, height } = getWindowDimensions()
 
-  return (
-    <>
-      <Canvas songInfo={data.getSong} width={width} height={height - 10} players={players} />
-    </>
-  )
+  return <Canvas songInfo={data.getSong} width={width} height={height - 10} players={players} />
 }
 
 export default KaraokePage

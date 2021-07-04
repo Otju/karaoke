@@ -1,4 +1,4 @@
-import { ObjectType, Field } from 'type-graphql'
+import { ObjectType, Field, Int } from 'type-graphql'
 import { prop, index, plugin } from '@typegoose/typegoose'
 import { ObjectId } from 'mongodb'
 import mongoosePaginate from 'mongoose-paginate-v2'
@@ -50,7 +50,7 @@ export class NotePage {
 }
 
 @index(
-  { title: 'text', artist: 'text', genre: 'text', language: 'text' },
+  { title: 'text', artist: 'text', genres: 'text', styles: 'text', language: 'text' },
   { default_language: 'none', language_override: 'none' }
 )
 @ObjectType()
@@ -76,7 +76,7 @@ export class Song {
   language?: string
 
   @prop()
-  @Field({ nullable: true })
+  @Field(() => Int, { nullable: true })
   year?: number
 
   @prop()
@@ -84,8 +84,20 @@ export class Song {
   edition?: string
 
   @prop()
+  @Field(() => [String], { nullable: true })
+  genres?: string[]
+
+  @prop()
+  @Field(() => [String], { nullable: true })
+  styles?: string[]
+
+  @prop()
   @Field({ nullable: true })
-  genre?: string
+  smallImage?: string
+
+  @prop()
+  @Field({ nullable: true })
+  bigImage?: string
 
   @prop()
   @Field()
