@@ -19,9 +19,18 @@ interface props {
   height: number
   tuners: Tuner[]
   lyricPlayMode?: boolean
+  settingsAreOpen?: boolean
 }
 
-const Canvas = ({ tuners, songInfo, width, height, startTime, lyricPlayMode }: props) => {
+const Canvas = ({
+  tuners,
+  songInfo,
+  width,
+  height,
+  startTime,
+  lyricPlayMode,
+  settingsAreOpen,
+}: props) => {
   const [animationId, setAnimationId] = useState(0)
   const [currentBeat, setCurrentBeat] = useState(0)
   const [timedSungNotes, setTimedSungNotes] = useState<SungNote[][]>([[], [], [], []])
@@ -41,7 +50,7 @@ const Canvas = ({ tuners, songInfo, width, height, startTime, lyricPlayMode }: p
     }))
   )
 
-  const playerCount = tuners ? tuners.filter((tuner) => tuner).length : 1
+  const playerCount = lyricPlayMode ? 1 : tuners.filter(({ isEnabled }) => isEnabled).length
 
   const canvasRef = useRef(null)
 
@@ -94,7 +103,7 @@ const Canvas = ({ tuners, songInfo, width, height, startTime, lyricPlayMode }: p
     drawPitch(
       ctx,
       currentBeat,
-      { width: width, height },
+      { width, height },
       notePages,
       lyricPlayMode ? 24 : 1,
       scoreInfo,
@@ -131,7 +140,12 @@ const Canvas = ({ tuners, songInfo, width, height, startTime, lyricPlayMode }: p
   }
 
   const start = () => {
-    clearSungNotes()
+    if (lyricPlayMode) {
+      clearSungNotes()
+    }
+    tuners.forEach((tuner) => {
+      tuner.play()
+    })
     tuners.forEach((tuner) => {
       tuner.updatePitch()
     })
@@ -154,15 +168,20 @@ const Canvas = ({ tuners, songInfo, width, height, startTime, lyricPlayMode }: p
         (currentTimeStamp - startTime - gap) * bpms
       const newCurrentBeat = timeToCurrentBeat(timestamp)
       setCurrentBeat(newCurrentBeat)
-      setTimedSungNotes((players) =>
-        players.map((notes, i) => {
-          if (tuners[i]) {
-            const name = tuners[i].noteName
-            return [...notes, { name, beat: newCurrentBeat }]
-          }
-          return notes
-        })
-      )
+      if (lyricPlayMode) {
+        setTimedSungNotes(([notes]) => [[...notes, { name: 'A', beat: newCurrentBeat }]])
+      } else {
+        setTimedSungNotes((players) =>
+          players.map((notes, i) => {
+            if (tuners[i]) {
+              const name = tuners[i].noteName
+              return [...notes, { name, beat: newCurrentBeat }]
+            }
+            return notes
+          })
+        )
+      }
+
       setAnimationId(requestAnimationFrame((callback) => render(callback, startTime)))
     }
   }
@@ -186,6 +205,13 @@ const Canvas = ({ tuners, songInfo, width, height, startTime, lyricPlayMode }: p
     setStopped(true)
     player.pauseVideo()
   }
+
+  useEffect(() => {
+    if (player && settingsAreOpen && !stopped) {
+      handlePause()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsAreOpen, stopped, player])
 
   const handleSkip = (value: number, newPlayer?: any) => {
     const playerToUse = newPlayer || player

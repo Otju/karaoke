@@ -49,6 +49,9 @@ export interface Tuner {
   noteName: string
   updatePitch: Function
   stopUpdatingPitch: Function
+  add: Function
+  play: Function
+  isEnabled?: boolean
 }
 
 export interface Song {

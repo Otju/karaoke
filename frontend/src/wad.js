@@ -3262,7 +3262,6 @@ Check out http://www.voxengo.com/impulses/ for free impulse responses. **/
             that.mediaStreamSource = null
             that.gain = null
             const { deviceId } = that
-            console.log(deviceId)
             return getUserMedia({ audio: deviceId ? { deviceId } : true, video: false })
               .then(function (stream) {
                 that.mediaStreamSource = context.createMediaStreamSource(stream)

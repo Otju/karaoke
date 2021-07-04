@@ -38,8 +38,9 @@ const SyncPage = ({ startTime, handleTimeChange, song, parsedID, id }: props) =>
           songInfo={{ ...song, gap: startTime, videoId: parsedID }}
           startTime={startTime}
           width={width}
-          height={height}
+          height={height - 10}
           tuners={[]}
+          lyricPlayMode={true}
         />
       </div>
     </>
