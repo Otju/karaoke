@@ -76,7 +76,7 @@ const drawPitch = (
   scoreInfo: ScoreInfo[],
   setScoreInfo: (ScoreInfos: ScoreInfo[]) => void,
   marginsForPlayers: marginForPlayer[],
-  clearAllSungNotes: () => void,
+  clearSungNotes: () => void,
   timedSungNotes: SungNote[][]
 ) => {
   const playerCount = marginsForPlayers.length
@@ -240,7 +240,7 @@ const drawPitch = (
           newScores.push(newScore)
           if (i - 1 === playerCount) {
             setScoreInfo(newScores)
-            clearAllSungNotes()
+            clearSungNotes()
           }
         }
       })

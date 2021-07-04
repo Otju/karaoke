@@ -2,52 +2,49 @@ import { BrowserRouter as Router, Switch, Route } from 'react-router-dom'
 import SongSelect from './components/SongSelect'
 import KaraokePage from './components/KaraokePage'
 import SongTweak from './components/SongTweak'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import SettingsPage from './components/SettingsPage'
 import getAudioDevices from './utils/getAudioDevices'
 import { IoSettingsSharp } from 'react-icons/io5'
 import Modal from './components/Modal'
 import Wad from './wad'
-import useInterval from './hooks/useInterval'
+import { Tuner } from './types/types'
 
 const App = () => {
   const [allDevices, setAllDevices] = useState<MediaDeviceInfo[]>([])
-  const [deviceIds, setDeviceIds] = useState<string[]>([...Array(4)].map(() => 'disabled'))
+  const [deviceIds, setDeviceIds] = useState<string[]>([
+    '1522b6821da4fd92de7459aee17546c0dd46350e1bef6fdfd99d578781301ca8',
+    'f724a192ea61b2527cf26ca7438b1e1887eb07b99bfcdd4d929f9b49993e0385',
+    'f107e225cbe39be744cb6014917bdeefc74db062dcd6ef06b4e56370f0e02d95',
+    'disabled',
+  ]) //[...Array(4)].map(() => 'disabled')
   const [settingsAreOpen, setSettingsAreOpen] = useState(false)
-  const audioContextRef = useRef()
-  const [, setVoice] = useState()
-  const [tuner, setTuner] = useState()
+  const [tuners, setTuners] = useState<Tuner[]>([])
 
   useEffect(() => {
     if (deviceIds) {
-      var newVoice = new Wad({
-        source: 'mic',
-        deviceId: deviceIds[1],
+      deviceIds.forEach((deviceId, i) => {
+        if (deviceId && deviceId !== 'disabled') {
+          const voice = new Wad({
+            source: 'mic',
+            deviceId,
+          })
+          var newTuner = new Wad.Poly()
+          newTuner.setVolume(0)
+          newTuner.add(voice)
+          voice.play()
+          newTuner.updatePitch()
+          setTuners((oldTuners) => {
+            const newTuners = [...oldTuners]
+            newTuners[i] = newTuner
+            return newTuners
+          })
+        }
       })
-      var newTuner = new Wad.Poly()
-      newTuner.setVolume(0)
-      newTuner.add(newVoice)
-      newVoice.play()
-      newTuner.updatePitch()
-      setVoice(newVoice)
-      setTuner(newTuner)
     }
   }, [deviceIds])
 
-  var logPitch = function () {
-    if (tuner) {
-      //@ts-ignore
-      console.log(tuner.pitch, tuner.noteName)
-    }
-  }
-
-  useInterval(logPitch, 1000)
-
-  useEffect(() => {
-    const audioContext = new AudioContext()
-    //@ts-ignore
-    audioContextRef.current = audioContext
-  }, [])
+  console.log(allDevices)
 
   useEffect(() => {
     try {
@@ -68,10 +65,7 @@ const App = () => {
         </Modal>
         <Switch>
           <Route path="/song/:id">
-            <KaraokePage
-              deviceIds={deviceIds}
-              audioContext={audioContextRef.current as unknown as AudioContext}
-            />
+            <KaraokePage tuners={tuners} />
           </Route>
           <Route path="/tweak/:id">
             <SongTweak />

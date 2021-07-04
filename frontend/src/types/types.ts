@@ -44,6 +44,13 @@ export interface SungNote {
   beat: number
 }
 
+export interface Tuner {
+  pitch: number
+  noteName: string
+  updatePitch: Function
+  stopUpdatingPitch: Function
+}
+
 export interface Song {
   _id: number
   title: string

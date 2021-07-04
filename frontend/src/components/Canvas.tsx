@@ -8,7 +8,7 @@ import {
   IoArrowBackSharp,
   IoSettingsSharp,
 } from 'react-icons/io5'
-import { Song, ScoreInfo, Player, SungNote } from '../types/types'
+import { Song, ScoreInfo, SungNote, Tuner } from '../types/types'
 import drawPitch from '../utils/drawPitch'
 import { Link } from 'react-router-dom'
 
@@ -17,11 +17,11 @@ interface props {
   startTime?: number
   width: number
   height: number
-  players: Player[]
+  tuners: Tuner[]
   lyricPlayMode?: boolean
 }
 
-const Canvas = ({ players, songInfo, width, height, startTime, lyricPlayMode }: props) => {
+const Canvas = ({ tuners, songInfo, width, height, startTime, lyricPlayMode }: props) => {
   const [animationId, setAnimationId] = useState(0)
   const [currentBeat, setCurrentBeat] = useState(0)
   const [timedSungNotes, setTimedSungNotes] = useState<SungNote[][]>([[], [], [], []])
@@ -31,7 +31,6 @@ const Canvas = ({ players, songInfo, width, height, startTime, lyricPlayMode }: 
   const [stopped, setStopped] = useState(true)
   const [mouseLastMove, setMouseLastMove] = useState(0)
   const [mouseOnButton, setMouseOnButton] = useState(false)
-  const [currentWholeBeat, setCurrentWholeBeat] = useState<number>(0)
   const [time, setTime] = useState(0)
   const [scoreInfo, setScoreInfo] = useState<ScoreInfo[]>(
     [...Array(4)].map(() => ({
@@ -42,7 +41,7 @@ const Canvas = ({ players, songInfo, width, height, startTime, lyricPlayMode }: 
     }))
   )
 
-  const playerCount = players ? players.filter((player) => player.isEnabled).length : 1
+  const playerCount = tuners ? tuners.filter((tuner) => tuner).length : 1
 
   const canvasRef = useRef(null)
 
@@ -84,17 +83,8 @@ const Canvas = ({ players, songInfo, width, height, startTime, lyricPlayMode }: 
     return { height, noteTopMargin, color, transparentColor }
   })
 
-  const clearAllSungNotes = (players: Player[]) => {
-    players?.forEach((player) => {
-      player.clearSungNotes()
-    })
+  const clearSungNotes = () => {
     setTimedSungNotes([[], [], [], []])
-  }
-
-  const handleAllAudioTicks = (players: Player[]) => {
-    players?.forEach((player) => {
-      player.handleAudioProcessTick()
-    })
   }
 
   useEffect(() => {
@@ -110,11 +100,11 @@ const Canvas = ({ players, songInfo, width, height, startTime, lyricPlayMode }: 
       scoreInfo,
       setScoreInfo,
       marginsForPlayers,
-      () => clearAllSungNotes(players),
+      clearSungNotes,
       timedSungNotes
     )
   }, [
-    players,
+    tuners,
     width,
     height,
     notePages,
@@ -141,7 +131,10 @@ const Canvas = ({ players, songInfo, width, height, startTime, lyricPlayMode }: 
   }
 
   const start = () => {
-    clearAllSungNotes(players)
+    clearSungNotes()
+    tuners.forEach((tuner) => {
+      tuner.updatePitch()
+    })
     const timeNow = document.timeline.currentTime
     if (pauseTime && timeNow) {
       if (savedStartTime) {
@@ -161,42 +154,23 @@ const Canvas = ({ players, songInfo, width, height, startTime, lyricPlayMode }: 
         (currentTimeStamp - startTime - gap) * bpms
       const newCurrentBeat = timeToCurrentBeat(timestamp)
       setCurrentBeat(newCurrentBeat)
-      const newWholeBeat = Math.round(currentBeat / 100)
-      if (newWholeBeat !== currentWholeBeat) {
-        console.log(currentBeat / 100)
-        console.log('NEW')
-        if (players[0].sungNotes.length > 0) {
-          console.log(players[0].sungNotes)
-        }
-        setCurrentWholeBeat(newWholeBeat)
-        setTimedSungNotes((playersWithNotes) =>
-          playersWithNotes.map((notes, i) => {
-            const { sungNotes } = players[i]
-            const currentTime = new Date().getTime()
-            const newestNoteGroup = sungNotes[sungNotes.length - 1]
-            if (newestNoteGroup && newestNoteGroup.timestamp) {
-              const timeDifference = currentTime - newestNoteGroup.timestamp
-              const beatDifference = bpms * timeDifference
-              const startBeat = currentBeat - beatDifference
-              const newNotes = newestNoteGroup.notes.map(({ key }, i) => {
-                const samplesPerBeat = 4
-                const beatsForward = i * (1 / samplesPerBeat)
-                const beat = startBeat + beatsForward
-                return { name: key, beat }
-              })
-              return [...notes, ...newNotes]
-            } else {
-              return notes
-            }
-          })
-        )
-        handleAllAudioTicks(players)
-      }
+      setTimedSungNotes((players) =>
+        players.map((notes, i) => {
+          if (tuners[i]) {
+            const name = tuners[i].noteName
+            return [...notes, { name, beat: newCurrentBeat }]
+          }
+          return notes
+        })
+      )
       setAnimationId(requestAnimationFrame((callback) => render(callback, startTime)))
     }
   }
 
   const stop = () => {
+    tuners.forEach((tuner) => {
+      tuner.stopUpdatingPitch()
+    })
     const timeNow = document.timeline.currentTime
     setPauseTime(timeNow)
     cancelAnimationFrame(animationId)
