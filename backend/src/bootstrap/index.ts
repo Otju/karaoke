@@ -1,11 +1,12 @@
 import express from 'express'
+import { Application } from 'apollo-server-express/node_modules/@types/express-serve-static-core'
 import mongoose from 'mongoose'
 
 import loaders from './loaders'
 import { Config } from '../config'
 
 export default async (config: Config) => {
-  const app = express()
+  const app = express() as Application
 
   const server = await loaders(app)
 

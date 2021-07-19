@@ -1,64 +1,12 @@
 import { SungNote, Dimensions, NotePage, ScoreInfo, NotePageNote } from '../types/types'
-import { roundRect } from './canvasHelpers'
-import { noteNames } from './noteNames'
-
-interface CalcBeatLength {
-  canvaswidth: number
-  startBeat: number
-  endBeat: number
-  beatMargin: number
-}
-
-interface BeatToX {
-  relativeBeat: number
-  beatLength: number
-  beatMargin: number
-}
-
-interface NoteToY {
-  height: number
-  noteBottomMargin?: number
-  noteTopMargin?: number
-  note: number
-}
-
-const calcbeatLength = ({ canvaswidth, startBeat, endBeat, beatMargin }: CalcBeatLength) => {
-  const beatAmount = endBeat - startBeat
-  const beatLength = (canvaswidth - beatMargin * 2) / beatAmount
-  return beatLength
-}
-
-const beatToX = ({ relativeBeat, beatLength, beatMargin }: BeatToX) => {
-  const x = beatMargin + relativeBeat * beatLength
-  return x
-}
-
-const noteToY = ({ height, noteTopMargin = 200, note }: NoteToY) => {
-  const y = noteTopMargin + height - height * ((note + 1) / 24)
-  return y
-}
-
-const getSungNoteIndex = (name: string) => {
-  const parsedName = `${name.replace(/\d+/, '')}`
-  return noteNames.findIndex((item) => item === parsedName)
-}
-
-interface DrawDashedLine {
-  ctx: any
-  pattern: number[]
-  startY: number
-  startX: number
-  endX: number
-}
-const drawDashedLine = ({ ctx, pattern, startY, startX, endX }: DrawDashedLine) => {
-  let y = startY
-  ctx.beginPath()
-  ctx.setLineDash(pattern)
-  ctx.moveTo(endX, y)
-  ctx.lineTo(startX, y)
-  ctx.stroke()
-  y += 20
-}
+import {
+  roundRect,
+  calcbeatLength,
+  beatToX,
+  noteToY,
+  drawDashedLine,
+  getSungNoteIndex,
+} from './canvasHelpers'
 
 interface marginForPlayer {
   height: number
@@ -195,6 +143,7 @@ const drawPitch = (
             //End of note
             roundRect(ctx, x, y, greyFixedBeatLength, width, { tr: 5, br: 5 }, true, false)
           } else {
+            //Middle of note
             ctx.fillRect(x, y, greyFixedBeatLength, width)
           }
         }

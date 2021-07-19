@@ -9,7 +9,7 @@ import SettingsPage from './SettingsPage'
 import getAudioDevices from '../utils/getAudioDevices'
 import { IoSettingsSharp } from 'react-icons/io5'
 import Modal from './Modal'
-import Wad from '../wad'
+import Wad from '../utils/wad'
 
 const KaraokePage = () => {
   const { id } = useParams<{ id: string }>()
@@ -22,8 +22,8 @@ const KaraokePage = () => {
 
   const [allDevices, setAllDevices] = useState<MediaDeviceInfo[]>([])
   const [deviceIds, setDeviceIds] = useState<string[]>([
-    '1522b6821da4fd92de7459aee17546c0dd46350e1bef6fdfd99d578781301ca8',
-    'f724a192ea61b2527cf26ca7438b1e1887eb07b99bfcdd4d929f9b49993e0385',
+    'disabled',
+    'disabled',
     'disabled',
     'disabled',
   ])
@@ -57,7 +57,6 @@ const KaraokePage = () => {
         }
       })
     }
-    //
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceIds])
 

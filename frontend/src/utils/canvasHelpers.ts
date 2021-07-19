@@ -1,3 +1,5 @@
+import { noteNames } from './noteNames'
+
 interface RadiusInput {
   tl?: number
   tr?: number
@@ -66,4 +68,62 @@ export const closestIndex = (num: number, arr: number[]) => {
     }
   }
   return index
+}
+
+interface CalcBeatLength {
+  canvaswidth: number
+  startBeat: number
+  endBeat: number
+  beatMargin: number
+}
+
+interface BeatToX {
+  relativeBeat: number
+  beatLength: number
+  beatMargin: number
+}
+
+interface NoteToY {
+  height: number
+  noteBottomMargin?: number
+  noteTopMargin?: number
+  note: number
+}
+
+export const calcbeatLength = ({ canvaswidth, startBeat, endBeat, beatMargin }: CalcBeatLength) => {
+  const beatAmount = endBeat - startBeat
+  const beatLength = (canvaswidth - beatMargin * 2) / beatAmount
+  return beatLength
+}
+
+export const beatToX = ({ relativeBeat, beatLength, beatMargin }: BeatToX) => {
+  const x = beatMargin + relativeBeat * beatLength
+  return x
+}
+
+export const noteToY = ({ height, noteTopMargin = 200, note }: NoteToY) => {
+  const y = noteTopMargin + height - height * ((note + 1) / 24)
+  return y
+}
+
+export const getSungNoteIndex = (name: string) => {
+  const parsedName = `${name.replace(/\d+/, '')}`
+  return noteNames.findIndex((item) => item === parsedName)
+}
+
+interface DrawDashedLine {
+  ctx: any
+  pattern: number[]
+  startY: number
+  startX: number
+  endX: number
+}
+export const drawDashedLine = ({ ctx, pattern, startY, startX, endX }: DrawDashedLine) => {
+  let y = startY
+  ctx.beginPath()
+  ctx.setLineDash(pattern)
+  ctx.moveTo(endX, y)
+  ctx.lineTo(startX, y)
+  ctx.stroke()
+  y += 20
 }
