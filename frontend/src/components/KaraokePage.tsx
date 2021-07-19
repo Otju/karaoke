@@ -9,7 +9,7 @@ import SettingsPage from './SettingsPage'
 import getAudioDevices from '../utils/getAudioDevices'
 import { IoSettingsSharp } from 'react-icons/io5'
 import Modal from './Modal'
-import Wad from '../utils/wad'
+const Wad = require('../utils/wad')
 
 const KaraokePage = () => {
   const { id } = useParams<{ id: string }>()
