@@ -27,19 +27,24 @@ const KaraokePage = () => {
     'disabled',
     'disabled',
   ])
+  const [tuners, setTuners] = useState<Tuner[]>([])
+
+  const allow = () => {
+    setTuners(
+      [...Array(4)].map(() => {
+        const tuner = new Wad.Poly()
+        tuner.setVolume(0)
+        return tuner
+      })
+    )
+  }
 
   const [settingsAreOpen, setSettingsAreOpen] = useState(false)
 
-  const [tuners, setTuners] = useState<Tuner[]>(
-    [...Array(4)].map(() => {
-      const tuner = new Wad.Poly()
-      tuner.setVolume(0)
-      return tuner
-    })
-  )
+  const allowed = tuners.length !== 0
 
   useEffect(() => {
-    if (deviceIds) {
+    if (deviceIds && allowed) {
       deviceIds.forEach((deviceId, i) => {
         if (deviceId && deviceId !== 'disabled') {
           const voice = new Wad({
@@ -58,7 +63,7 @@ const KaraokePage = () => {
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deviceIds])
+  }, [deviceIds, allowed])
 
   useEffect(() => {
     try {
@@ -80,7 +85,7 @@ const KaraokePage = () => {
 
   const { width, height } = getWindowDimensions()
 
-  return (
+  return allowed ? (
     <>
       <button className="bigButton settingsButton" onClick={() => setSettingsAreOpen(true)}>
         <IoSettingsSharp size={30} />
@@ -96,6 +101,8 @@ const KaraokePage = () => {
         settingsAreOpen={settingsAreOpen}
       />
     </>
+  ) : (
+    <button onClick={allow}>Allow?</button>
   )
 }
 
