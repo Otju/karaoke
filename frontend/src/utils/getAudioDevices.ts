@@ -5,7 +5,9 @@ interface props {
 }
 
 const getAudioDevices = async ({ setAllDevices, setDeviceIds, dontSetDefault }: props) => {
+  await navigator.mediaDevices.getUserMedia({ audio: true })
   let devices = await navigator.mediaDevices.enumerateDevices()
+  console.log(devices)
   devices = devices.filter(
     (device) =>
       device.kind === 'audioinput' &&

@@ -9,7 +9,7 @@ import SettingsPage from './SettingsPage'
 import getAudioDevices from '../utils/getAudioDevices'
 import { IoSettingsSharp } from 'react-icons/io5'
 import Modal from './Modal'
-const Wad = require('../utils/wad')
+import Wad from '../Wad/main'
 
 const KaraokePage = () => {
   const { id } = useParams<{ id: string }>()
@@ -27,43 +27,37 @@ const KaraokePage = () => {
     'disabled',
     'disabled',
   ])
-  const [tuners, setTuners] = useState<Tuner[]>([])
-
-  const allow = () => {
-    setTuners(
-      [...Array(4)].map(() => {
-        const tuner = new Wad.Poly()
-        tuner.setVolume(0)
-        return tuner
-      })
-    )
-  }
 
   const [settingsAreOpen, setSettingsAreOpen] = useState(false)
 
-  const allowed = tuners.length !== 0
+  const [tuners, setTuners] = useState<Tuner[]>(
+    [...Array(4)].map(() => {
+      //@ts-ignore
+      const tuner = new Wad.Poly()
+      tuner.setVolume(0)
+      return tuner
+    })
+  )
 
   useEffect(() => {
-    if (deviceIds && allowed) {
-      deviceIds.forEach((deviceId, i) => {
-        if (deviceId && deviceId !== 'disabled') {
-          const voice = new Wad({
-            source: 'mic',
-            deviceId,
-          })
-          const tuner = tuners[i]
-          tuner.add(voice)
-          setTuners((oldTuners) => {
-            const newTuners = [...oldTuners]
-            tuner.isEnabled = true
-            newTuners[i] = tuner
-            return newTuners
-          })
-        }
-      })
-    }
+    deviceIds.forEach((deviceId, i) => {
+      if (deviceId && deviceId !== 'disabled') {
+        const voice = new Wad({
+          source: 'mic',
+          deviceId,
+        })
+        const tuner = tuners[i]
+        tuner.add(voice)
+        setTuners((oldTuners) => {
+          const newTuners = [...oldTuners]
+          tuner.isEnabled = true
+          newTuners[i] = tuner
+          return newTuners
+        })
+      }
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deviceIds, allowed])
+  }, [deviceIds])
 
   useEffect(() => {
     try {
@@ -85,7 +79,7 @@ const KaraokePage = () => {
 
   const { width, height } = getWindowDimensions()
 
-  return allowed ? (
+  return (
     <>
       <button className="bigButton settingsButton" onClick={() => setSettingsAreOpen(true)}>
         <IoSettingsSharp size={30} />
@@ -101,8 +95,6 @@ const KaraokePage = () => {
         settingsAreOpen={settingsAreOpen}
       />
     </>
-  ) : (
-    <button onClick={allow}>Allow?</button>
   )
 }
 
