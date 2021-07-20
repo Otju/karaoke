@@ -1,0 +1,4 @@
+{
+  "appService.defaultWebAppToDeploy": "/subscriptions/8254eed1-829b-4591-bf0e-e6137aa2a5ee/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/karaokeBackend",
+  "appService.deploySubpath": "backend"
+}
