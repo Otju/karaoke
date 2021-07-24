@@ -335,11 +335,33 @@ input:focus {
   top: 2%;
 }
 
+.column {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.dropwDown {
+  margin: 5px 0px;
+  height: 30px;
+}
+
+select {
+  height: 30px;
+}
+
+.margins {
+  margin: 20px;
+}
+
 .settingsPage {
   display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  margin: 5%;
+  flex-direction: row;
 }
 
 .settingsButton {

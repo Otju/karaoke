@@ -1,4 +1,4 @@
-import { SungNote, Dimensions, NotePage, ScoreInfo, NotePageNote } from '../types/types'
+import { SungNote, Dimensions, NotePage, ScoreInfo, NotePageNote, Settings } from '../types/types'
 import {
   roundRect,
   calcbeatLength,
@@ -20,7 +20,7 @@ const drawPitch = (
   currentBeat: number,
   pageSize: Dimensions,
   notePages: NotePage[],
-  snapAmount: number,
+  settings: Settings,
   scoreInfo: ScoreInfo[],
   setScoreInfo: (ScoreInfos: ScoreInfo[]) => void,
   marginsForPlayers: marginForPlayer[],
@@ -96,7 +96,11 @@ const drawPitch = (
     ctx.fillText(notFilledLyrics, textX + filledLength, firstRowY)
     ctx.fillText(nextPageLyrics, nextPageLyricsX, secondRowY)
 
-    const calculateIsRightNote = (currentNote: NotePageNote, sungNoteName: string) => {
+    const calculateIsRightNote = (
+      currentNote: NotePageNote,
+      sungNoteName: string,
+      snapAmount: number
+    ) => {
       let rightNoteIndex = currentNote.note
       let sungNoteIndex = getSungNoteIndex(sungNoteName)
       const closenessToRightNote = Math.abs(sungNoteIndex - rightNoteIndex)
@@ -112,84 +116,111 @@ const drawPitch = (
       return { isRightNote, sungNoteIndex }
     }
 
-    const parseSungNote = (beat: number, sungNoteName: string | undefined) => {
+    const parseSungNote = (beat: number, sungNoteName: string | undefined, snapAmount: number) => {
       if (!sungNoteName) return null
       const currentNote = currentNotePage.notes.find(
         ({ beat: notePageBeat, length }) => beat >= notePageBeat && beat < notePageBeat + length
       )
       if (!currentNote) return null
-      const { sungNoteIndex, isRightNote } = calculateIsRightNote(currentNote, sungNoteName)
+      const { sungNoteIndex, isRightNote } = calculateIsRightNote(
+        currentNote,
+        sungNoteName,
+        snapAmount
+      )
       return { sungNoteIndex, isRightNote, currentNote }
     }
 
     const newScores: ScoreInfo[] = []
-    timedSungNotes.forEach((sungNotes, i) => {
-      sungNotes.forEach(({ beat, name }) => {
-        const parsed = parseSungNote(beat, name)
+
+    timedSungNotes.forEach((sungNotes, playerIndex) => {
+      //Draw Sung notes
+      const difficulty = settings.playerSettings[playerIndex].difficulty
+      const snapAmounts = { Expert: 0, Hard: 1, Normal: 2, Easy: 3, 'Auto-Play': 24 }
+      const snapAmount = snapAmounts[difficulty]
+      sungNotes.forEach(({ beat, name }, sungNoteIndexInNotes) => {
+        const parsed = parseSungNote(beat, name, snapAmount)
         if (parsed) {
-          const { sungNoteIndex, isRightNote, currentNote } = parsed
+          const { sungNoteIndex, isRightNote } = parsed
+          const previousSungNote =
+            sungNoteIndexInNotes > 0 ? sungNotes[sungNoteIndexInNotes - 1] : sungNotes[0]
+          const nextSungNote = sungNotes[sungNoteIndexInNotes + 1]
+          const parsedPreviousNote = parseSungNote(
+            previousSungNote?.beat,
+            previousSungNote?.name,
+            snapAmount
+          )
+          const parsedNextNote = parseSungNote(nextSungNote?.beat, nextSungNote?.name, snapAmount)
+          const dummy = { sungNoteIndex: 0 }
+          const { sungNoteIndex: previousSungNoteIndex } = parsedPreviousNote || dummy
+          const { sungNoteIndex: nextSungNoteIndex } = parsedNextNote || dummy
           const relativeBeat = beat - startBeat
           const x = beatToX({ relativeBeat, beatLength, beatMargin })
-          const { height, noteTopMargin, color, transparentColor } = marginsForPlayers[i]
+          const { height, noteTopMargin, color, transparentColor } = marginsForPlayers[playerIndex]
           const y = noteToY({ note: sungNoteIndex, noteTopMargin, height })
           ctx.fillStyle = isRightNote ? color : transparentColor
-          const greyFixedBeatLength = beatLength + (isRightNote ? 1 : 0)
           const width = 20
-          const { beat: currentNoteBeat, length } = currentNote
-          if (beat === currentNoteBeat) {
+          const length = beatLength / 4
+          if (sungNoteIndex !== previousSungNoteIndex) {
             //Start of note
-            roundRect(ctx, x, y, greyFixedBeatLength, width, { tl: 5, bl: 5 }, true, false)
-          } else if (beat === currentNoteBeat + length - 1) {
+            roundRect(ctx, x - 5, y, length + 5, width, { tl: 5, bl: 5 }, true, false)
+          } else if (sungNoteIndex !== nextSungNoteIndex) {
             //End of note
-            roundRect(ctx, x, y, greyFixedBeatLength, width, { tr: 5, br: 5 }, true, false)
+            roundRect(ctx, x, y, length, width, { tr: 5, br: 5 }, true, false)
           } else {
             //Middle of note
-            ctx.fillRect(x, y, greyFixedBeatLength, width)
+            ctx.fillRect(x, y, length, width)
           }
         }
-        const isLastBeatOfPage = Math.ceil(beat) === currentNotePage.endBeat
+
+        const isLastBeatOfPage = Math.round(beat) === currentNotePage.endBeat
+        let newScore = scoreInfo[playerIndex]
         if (isLastBeatOfPage) {
-          let newScore = scoreInfo[i]
-          const { scorePerNote } = newScore
-          let scoreForPage = 0
-          currentNotePage.notes.forEach((currentNote) => {
-            const { beat: currentNoteBeat, length } = currentNote
-            const sungNotesForNote = sungNotes.filter(
-              ({ beat }) => beat >= currentNoteBeat && beat < currentNoteBeat + length
-            )
-            const rightNotesForNote = sungNotesForNote.filter(({ name }) => {
-              if (!name) {
-                return false
+          const scoreIsAlreadyCalculated =
+            newScore.calculatedNotePageIndexes.includes(currentNotePageIndex)
+          if (!scoreIsAlreadyCalculated) {
+            const { scorePerNote } = newScore
+            let scoreForPage = 0
+            currentNotePage.notes.forEach((currentNote) => {
+              const { beat: currentNoteBeat, length } = currentNote
+              const sungNotesForNote = sungNotes.filter(
+                ({ beat }) => beat >= currentNoteBeat && beat < currentNoteBeat + length
+              )
+              const rightNotesForNote = sungNotesForNote.filter(({ name }) => {
+                if (!name) {
+                  return false
+                }
+                const { isRightNote } = calculateIsRightNote(currentNote, name, snapAmount)
+                return isRightNote
+              })
+              const percentageOfRight = rightNotesForNote.length / sungNotesForNote.length
+              if (percentageOfRight > 0.7) {
+                const multiplier = currentNote.type === 'golden' ? 2 : 1
+                const noteScore = currentNote.length * scorePerNote * multiplier
+                newScore.hitNotes++
+                newScore.score += noteScore
+                scoreForPage += currentNote.length * scorePerNote * multiplier
+              } else {
+                newScore.missedNotes++
               }
-              const { isRightNote } = calculateIsRightNote(currentNote, name)
-              return isRightNote
             })
-            const percentageOfRight = rightNotesForNote.length / sungNotesForNote.length
-            if (percentageOfRight > 0.7) {
-              const multiplier = currentNote.type === 'golden' ? 2 : 1
-              const noteScore = currentNote.length * scorePerNote * multiplier
-              newScore.hitNotes++
-              newScore.score += noteScore
-              scoreForPage += currentNote.length * scorePerNote * multiplier
-            } else {
-              newScore.missedNotes++
+            newScore.calculatedNotePageIndexes =
+              newScore.calculatedNotePageIndexes.concat(currentNotePageIndex)
+            let maxScoreForPageCount = 0
+            currentNotePage.notes.forEach(({ type, length }) => {
+              if (type === 'normal') {
+                maxScoreForPageCount += length
+              } else if (type === 'golden') {
+                maxScoreForPageCount += length * 2
+              }
+            })
+            const maxScoreForPage = maxScoreForPageCount * scorePerNote
+            newScore.percentageOnPage = scoreForPage / maxScoreForPage
+            newScore.addedAmount = scoreForPage
+            newScores.push(newScore)
+            if (playerIndex - 1 === playerCount) {
+              setScoreInfo(newScores)
+              clearSungNotes()
             }
-          })
-          let maxScoreForPage = 0
-          currentNotePage.notes.forEach(({ type, length }) => {
-            if (type === 'normal') {
-              maxScoreForPage += length
-            } else if (type === 'golden') {
-              maxScoreForPage += length * 2
-            }
-          })
-          maxScoreForPage = maxScoreForPage * scorePerNote
-          newScore.percentageOnPage = scoreForPage / maxScoreForPage
-          newScore.addedAmount = scoreForPage
-          newScores.push(newScore)
-          if (i - 1 === playerCount) {
-            setScoreInfo(newScores)
-            clearSungNotes()
           }
         }
       })

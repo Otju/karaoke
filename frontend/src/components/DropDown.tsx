@@ -1,22 +1,30 @@
+interface DropDownInput {
+  value: any
+  label: string
+}
+
 interface props {
-  allDevices: MediaDeviceInfo[]
-  setPlayerDevice: (newId: string) => void
+  array: DropDownInput[]
+  setValue: (value: string) => void
   currentSelected: string
   name: string
 }
 
-const DropDown = ({ allDevices, setPlayerDevice, currentSelected, name }: props) => {
+const DropDown = ({ array, setValue, currentSelected, name }: props) => {
   const handleChange = (event: React.FormEvent<HTMLSelectElement>) => {
-    setPlayerDevice(event.currentTarget.value)
+    setValue(event.currentTarget.value)
   }
   return (
-    <label>
+    <label className="row dropwDown">
       {name}
       <select value={currentSelected} onChange={handleChange}>
-        <option value={'disabled'}>Disabled</option>
-        {allDevices.map(({ label, deviceId }) => (
-          <option value={deviceId}>{label.replace(/\([\S]{4}:[\S]{4}\)/g, '')}</option>
-        ))}
+        {array.map(({ value, label }) => {
+          return (
+            <option value={value} key={label}>
+              {label}
+            </option>
+          )
+        })}
       </select>
     </label>
   )

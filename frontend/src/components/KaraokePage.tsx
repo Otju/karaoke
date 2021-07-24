@@ -3,7 +3,7 @@ import { useParams, useHistory } from 'react-router-dom'
 import { SongQuery } from '../graphql/queries'
 import { getWindowDimensions } from '../hooks/useWindowDimensions'
 import Canvas from './Canvas'
-import { Tuner } from '../types/types'
+import { Settings, Tuner } from '../types/types'
 import { useState, useEffect } from 'react'
 import SettingsPage from './SettingsPage'
 import getAudioDevices from '../utils/getAudioDevices'
@@ -21,12 +21,10 @@ const KaraokePage = () => {
   })
 
   const [allDevices, setAllDevices] = useState<MediaDeviceInfo[]>([])
-  const [deviceIds, setDeviceIds] = useState<string[]>([
-    'disabled',
-    'disabled',
-    'disabled',
-    'disabled',
-  ])
+
+  const [settings, setSettings] = useState<Settings>({
+    playerSettings: [...Array(4)].map(() => ({ deviceId: 'disabled', difficulty: 'Normal' })),
+  })
 
   const [settingsAreOpen, setSettingsAreOpen] = useState(false)
 
@@ -40,7 +38,7 @@ const KaraokePage = () => {
   )
 
   useEffect(() => {
-    deviceIds.forEach((deviceId, i) => {
+    settings.playerSettings.forEach(({ deviceId }, i) => {
       if (deviceId && deviceId !== 'disabled') {
         const voice = new Wad({
           source: 'mic',
@@ -54,18 +52,37 @@ const KaraokePage = () => {
           newTuners[i] = tuner
           return newTuners
         })
+      } else {
+        setTuners((oldTuners) => {
+          const tuner = tuners[i]
+          const newTuners = [...oldTuners]
+          tuner.isEnabled = false
+          newTuners[i] = tuner
+          return newTuners
+        })
       }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deviceIds])
+  }, [settings])
 
   useEffect(() => {
+    const setDeviceIds = (newDeviceIds: string[]) => {
+      setSettings((oldSettings) => ({
+        ...oldSettings,
+        playerSettings: oldSettings.playerSettings.map((item, i) => {
+          return {
+            ...item,
+            deviceId: newDeviceIds[i],
+          }
+        }),
+      }))
+    }
     try {
       getAudioDevices({ setAllDevices, setDeviceIds })
     } catch (err) {
       console.error(err)
     }
-  }, [setDeviceIds])
+  }, [])
 
   const { data, fetching, error } = result
 
@@ -85,7 +102,7 @@ const KaraokePage = () => {
         <IoSettingsSharp size={30} />
       </button>
       <Modal isVisible={settingsAreOpen} setInvisible={() => setSettingsAreOpen(false)}>
-        <SettingsPage setDeviceIds={setDeviceIds} deviceIds={deviceIds} allDevices={allDevices} />
+        <SettingsPage setSettings={setSettings} settings={settings} allDevices={allDevices} />
       </Modal>
       <Canvas
         songInfo={data.getSong}
@@ -93,6 +110,7 @@ const KaraokePage = () => {
         height={height - 10}
         tuners={tuners}
         settingsAreOpen={settingsAreOpen}
+        settings={settings}
       />
     </>
   )

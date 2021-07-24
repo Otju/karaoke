@@ -8,7 +8,7 @@ import {
   IoArrowBackSharp,
   IoSettingsSharp,
 } from 'react-icons/io5'
-import { Song, ScoreInfo, SungNote, Tuner } from '../types/types'
+import { Song, ScoreInfo, SungNote, Tuner, Settings } from '../types/types'
 import drawPitch from '../utils/drawPitch'
 import { Link } from 'react-router-dom'
 
@@ -20,6 +20,7 @@ interface props {
   tuners: Tuner[]
   lyricPlayMode?: boolean
   settingsAreOpen?: boolean
+  settings: Settings
 }
 
 const Canvas = ({
@@ -30,6 +31,7 @@ const Canvas = ({
   startTime,
   lyricPlayMode,
   settingsAreOpen,
+  settings,
 }: props) => {
   const [animationId, setAnimationId] = useState(0)
   const [currentBeat, setCurrentBeat] = useState(0)
@@ -41,34 +43,33 @@ const Canvas = ({
   const [mouseLastMove, setMouseLastMove] = useState(0)
   const [mouseOnButton, setMouseOnButton] = useState(false)
   const [time, setTime] = useState(0)
+
+  let totalnoteLength = 0
+  songInfo.notePages.forEach(({ notes }) => {
+    notes.forEach(({ type, length }) => {
+      if (type === 'normal') {
+        totalnoteLength += length
+      } else if (type === 'golden') {
+        totalnoteLength += length * 2
+      }
+    })
+  })
+  const maxScore = 10000
+  const scorePerNote = maxScore / totalnoteLength
+
   const [scoreInfo, setScoreInfo] = useState<ScoreInfo[]>(
     [...Array(4)].map(() => ({
       score: 0,
       hitNotes: 0,
       missedNotes: 0,
-      scorePerNote: 1,
+      scorePerNote,
+      calculatedNotePageIndexes: [],
     }))
   )
 
   const playerCount = lyricPlayMode ? 1 : tuners.filter(({ isEnabled }) => isEnabled).length
 
   const canvasRef = useRef(null)
-
-  useEffect(() => {
-    let totalnoteLength = 0
-    songInfo.notePages.forEach(({ notes }) => {
-      notes.forEach(({ type, length }) => {
-        if (type === 'normal') {
-          totalnoteLength += length
-        } else if (type === 'golden') {
-          totalnoteLength += length * 2
-        }
-      })
-    })
-    const maxScore = 10000
-    const scorePerNote = maxScore / totalnoteLength
-    setScoreInfo((oldInfo) => ({ ...oldInfo, scorePerNote }))
-  }, [songInfo])
 
   const { bpm: barsPerMinute, notePages, gap, videoId } = songInfo
 
@@ -105,7 +106,7 @@ const Canvas = ({
       currentBeat,
       { width, height },
       notePages,
-      lyricPlayMode ? 24 : 1,
+      settings,
       scoreInfo,
       setScoreInfo,
       marginsForPlayers,
@@ -122,6 +123,7 @@ const Canvas = ({
     currentBeat,
     marginsForPlayers,
     timedSungNotes,
+    settings,
   ])
 
   useEffect(() => {
@@ -257,10 +259,10 @@ const Canvas = ({
       return ['Great!', 'green']
     } else if (scorePercentage >= 0.6) {
       return ['Good', 'green']
-    } else if (scorePercentage >= 0.5) {
+    } else if (scorePercentage >= 0.4) {
       return ['Decent', 'yellow']
-    } else if (scorePercentage >= 0.3) {
-      return [':(', 'red']
+    } else if (scorePercentage >= 0.2) {
+      return ['Not that bad', 'red']
     } else {
       return ['Dude, really?', 'red']
     }
@@ -306,7 +308,11 @@ const Canvas = ({
         const { percentageOnPage, score, missedNotes, hitNotes } = scoreInfo[i]
         const scoreText = getScoreText(percentageOnPage)
         return (
-          <div className="scoreBox" style={{ top: noteTopMargin + height * 0.16 }}>
+          <div
+            className="scoreBox"
+            style={{ top: noteTopMargin + height * 0.16 }}
+            key={`Margin${i}`}
+          >
             <span style={{ color }}>{score.toFixed(0)}</span>
             <div className="percentageScore" key={missedNotes + hitNotes}>
               {scoreText && <b style={{ color: scoreText[1] }}>{scoreText[0]}</b>}

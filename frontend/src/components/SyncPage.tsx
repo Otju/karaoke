@@ -41,6 +41,12 @@ const SyncPage = ({ startTime, handleTimeChange, song, parsedID, id }: props) =>
           height={height - 10}
           tuners={[]}
           lyricPlayMode={true}
+          settings={{
+            playerSettings: [...Array(4)].map(() => ({
+              difficulty: 'Auto-Play',
+              deviceId: 'disabled',
+            })),
+          }}
         />
       </div>
     </>

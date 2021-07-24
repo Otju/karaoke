@@ -97,6 +97,16 @@ export interface ScoreInfo {
   hitNotes: number
   missedNotes: number
   scorePerNote: number
+  calculatedNotePageIndexes: number[]
   addedAmount?: number
   percentageOnPage?: number
+}
+
+export interface PlayerSettings {
+  deviceId: string
+  difficulty: 'Expert' | 'Hard' | 'Normal' | 'Easy' | 'Auto-Play'
+}
+
+export interface Settings {
+  playerSettings: PlayerSettings[]
 }
