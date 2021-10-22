@@ -3,6 +3,11 @@
 .env
 coverage/
 
+#serverless
+serverless_sdk
+.serverless
+
+
 # dependencies
 node_modules/
 build/

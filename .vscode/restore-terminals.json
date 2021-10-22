@@ -10,10 +10,6 @@
         {
           "name": "frontend",
           "commands": ["cd ./frontend", "npm start"]
-        },
-        {
-          "name": "scraper",
-          "commands": ["cd ./scraper"]
         }
       ]
     }

@@ -1,0 +1,28 @@
+org: otjuso
+app: karaoke-backend
+service: karaoke-backend
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: eu-central-1
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 4000
+
+functions:
+  graphql:
+    handler: ./build/index.handler
+    events:
+      - http:
+          path: /graphql
+          method: POST
+          cors: true
+      - http:
+          path: /graphql
+          method: GET
+          cors: true
