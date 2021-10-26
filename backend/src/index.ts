@@ -7,7 +7,7 @@ import loaders from './bootstrap/loaders'
 import { config } from './config'
 import serverless from 'serverless-http'
 
-const getServer = async () => {
+export const getServer = async () => {
   const app = express() as Application
 
   const server = await loaders(app)
