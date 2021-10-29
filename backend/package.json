@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "main": ".build/index.js",
   "scripts": {
-    "dev": "nodemon --watch src --exec npm run serverless",
+    "dev": "ts-node-dev --respawn --transpile-only ./src/local.ts",
     "local": "tsc && node ./build/local.js",
     "build": "tsc",
     "start": "node ./build/index.js",
@@ -23,7 +23,7 @@
     "jest": "^26.0.1",
     "serverless-offline": "^8.2.0",
     "ts-jest": "^25.5.1",
-    "ts-node-dev": "^1.1.7",
+    "ts-node-dev": "^1.1.8",
     "typescript": "^3.8.3"
   },
   "dependencies": {

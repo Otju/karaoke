@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom'
-import SongSelect from './components/SongSelect'
+import SongSelectPage from './components/SongSelectPage'
 import KaraokePage from './components/KaraokePage'
-import SongTweak from './components/SongTweak'
+import SongTweakPage from './components/SongTweakPage'
 
 const App = () => {
   return (
@@ -12,10 +12,10 @@ const App = () => {
             <KaraokePage />
           </Route>
           <Route path="/tweak/:id">
-            <SongTweak />
+            <SongTweakPage />
           </Route>
           <Route path="/">
-            <SongSelect />
+            <SongSelectPage />
           </Route>
         </Switch>
       </div>

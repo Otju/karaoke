@@ -1,9 +1,8 @@
-import { Link } from 'react-router-dom'
 import { Song } from '../types/types'
 import { AiFillYoutube, AiFillHourglass, AiOutlineSearch } from 'react-icons/ai'
 import { useQuery } from 'urql'
 import InfiniteScroll from 'react-infinite-scroll-component'
-
+import { FaHeart } from 'react-icons/fa'
 import { SongsQuery } from '../graphql/queries'
 import useInput from '../hooks/useInput'
 import { useState } from 'react'
@@ -11,11 +10,14 @@ import CrossedIcon from './CrossedIcon'
 import useCheckBox from '../hooks/useCheckBox'
 import { useEffect } from 'react'
 import { useWindowDimensions } from '../hooks/useWindowDimensions'
+import SongListItem from './SongListItem'
+import { getFavorited } from '../utils/localStorage'
 
-const SongSelect = () => {
+const SongSelectPage = () => {
   const [searchString, setSearchString] = useState('')
   const [page, setPage] = useState(1)
   const [songs, setSongs] = useState<Set<Song>>(new Set())
+  const [showFavorited, setShowFavorited] = useState(false)
 
   const resetSongPage = () => {
     setSongs(new Set())
@@ -38,7 +40,10 @@ const SongSelect = () => {
     color: 'var(--warningColor)',
     tooltip: 'Include songs that probably have a wrong start time',
     defaultValue: true,
-    onClick: resetSongPage,
+    onClick: () => {
+      resetSongPage()
+      hasVideo.setValue(true)
+    },
   })
 
   const hasVideo = useCheckBox({
@@ -52,9 +57,16 @@ const SongSelect = () => {
     },
   })
 
+  const favoritedIds = showFavorited ? getFavorited() : undefined
   const [result] = useQuery({
     query: SongsQuery,
-    variables: { searchString, hasVideo: hasVideo.value, hasRightGap: hasRightGap.value, page },
+    variables: {
+      searchString,
+      hasVideo: hasVideo.value,
+      hasRightGap: hasRightGap.value,
+      page,
+      favoritedIds,
+    },
   })
 
   const { height } = useWindowDimensions()
@@ -87,24 +99,15 @@ const SongSelect = () => {
       colorClass = 'warningColor'
     }
     const item = (
-      <li className={`songListItem ${colorClass}`}>
-        <Link to={`song/${_id}`} key={_id}>
-          <img
-            src={smallImage || '/missingCover.png'}
-            alt="Missing cover"
-            className="coverPicture absCenterY"
-            height={100}
-            width={100}
-          ></img>
-          <div className="songInfo">
-            <div className="songName">
-              <p>{artist}</p>
-              <p>{title}</p>
-            </div>
-            <div className="songIcon">{icon}</div>
-          </div>
-        </Link>
-      </li>
+      <SongListItem
+        title={title}
+        artist={artist}
+        key={_id}
+        idString={_id.toString()}
+        smallImage={smallImage}
+        colorClass={colorClass}
+        icon={icon}
+      />
     )
     if (isEven) {
       rows[rowNumber] = [item]
@@ -117,11 +120,23 @@ const SongSelect = () => {
   const searchOptionsHeight = height * 0.1
   const scrollHeight = height * 0.7
 
+  const handleShowFavorited = () => {
+    setShowFavorited(!showFavorited)
+    resetSongPage()
+  }
+
   return (
     <div className="centerX">
-      <div className="songSelectContainer">
+      <div className="SongSelectPageContainer">
         <div>
           <div className="searchOptions" style={{ height: searchOptionsHeight }}>
+            <button
+              style={{ backgroundColor: 'transparent', display: 'flex', flexDirection: 'column' }}
+              onClick={handleShowFavorited}
+            >
+              <FaHeart size={50} color={'red'} />
+              {showFavorited ? 'Show all' : 'Show favorited'}
+            </button>
             {search.field}
             {hasVideo.field}
             {hasRightGap.field}
@@ -155,4 +170,4 @@ const SongSelect = () => {
   )
 }
 
-export default SongSelect
+export default SongSelectPage
