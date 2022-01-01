@@ -167,6 +167,34 @@ li {
   text-align: left;
 }
 
+.songInfoControls {
+  visibility: hidden;
+  position: absolute;
+  top: 25%;
+  right: 10%;
+  z-index: 100;
+}
+.songInfo:hover .songInfoControls {
+  visibility: visible;
+}
+
+.songInfoButton {
+  color: black;
+  background-color: white;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  margin-left: 10px;
+}
+
+.songInfoButton:hover {
+  filter: brightness(0.5);
+}
+
+.songInfoButtonIcon {
+  margin-top: 7px;
+}
+
 .songName {
   width: 15vw;
 }
@@ -189,7 +217,7 @@ li {
 }
 
 .songListItem:hover {
-  filter: brightness(2);
+  background-color: rgb(66, 63, 63);
 }
 
 .dangerColor {

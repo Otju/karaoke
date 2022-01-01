@@ -7,7 +7,7 @@ import { useEffect } from 'react'
 import SyncPage from './SyncPage'
 import { Switch, Route, Link, useParams, useHistory } from 'react-router-dom'
 
-const SongTweak = () => {
+const SongTweakPage = () => {
   const [videoIdField, setVideoIdField] = useState('')
   const [isInvalid, setIsInvalid] = useState(false)
 
@@ -157,4 +157,4 @@ const SongTweak = () => {
   )
 }
 
-export default SongTweak
+export default SongTweakPage

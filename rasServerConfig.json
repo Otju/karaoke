@@ -1,5 +1,5 @@
 {
-  "onfirstTimeInit": "cd ./scraper && npm install && cd .. && cd ./backend && npm install && npm build",
-  "onUpdate": "cd ./scraper && npm install && cd .. && cd ./backend && npm install && npm build",
-  "onRun": "concurrently --kill-others \"cd backend/ & npm start\" \"cd scraper/ & npm start\""
+  "onfirstTimeInit": "cd ./scraper && npm install && cd .. && cd ./backend && npm install && npm run build",
+  "onUpdate": "cd ./scraper && npm install && cd .. && cd ./backend && npm install && npm run build",
+  "onRun": "concurrently --kill-others \"cd backend/ && npm run local\" \"cd scraper/ && npm start\""
 }

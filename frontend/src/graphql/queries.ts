@@ -25,8 +25,8 @@ export const SongQuery = `
 `
 
 export const SongsQuery = `
-query($searchString: String, $hasVideo: Boolean, $hasRightGap: Boolean, $page: Int!) {
-  getSongs(searchString: $searchString, hasVideo: $hasVideo, hasRightGap: $hasRightGap, page: $page){
+query($searchString: String, $hasVideo: Boolean, $hasRightGap: Boolean, $page: Int!, $favoritedIds: [String!]) {
+  getSongs(searchString: $searchString, hasVideo: $hasVideo, hasRightGap: $hasRightGap, page: $page, favoritedIds: $favoritedIds){
     totalDocs
     hasNextPage
     songs{

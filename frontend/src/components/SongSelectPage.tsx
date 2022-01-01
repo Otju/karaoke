@@ -2,7 +2,6 @@ import { Song, ColorClass } from '../types/types'
 import { AiFillYoutube, AiFillHourglass, AiOutlineSearch } from 'react-icons/ai'
 import { useQuery } from 'urql'
 import InfiniteScroll from 'react-infinite-scroll-component'
-
 import { SongsQuery } from '../graphql/queries'
 import useInput from '../hooks/useInput'
 import { useState } from 'react'
@@ -10,11 +9,13 @@ import CrossedIcon from './CrossedIcon'
 import useCheckBox from '../hooks/useCheckBox'
 import { useEffect } from 'react'
 import SongListItem from './SongListItem'
+import { getItem } from '../utils/localStorage'
 
-const SongSelect = () => {
+const SongSelectPage = () => {
   const [searchString, setSearchString] = useState('')
   const [page, setPage] = useState(1)
   const [songs, setSongs] = useState<Set<Song>>(new Set())
+  const [showFavorited, setShowFavorited] = useState(false)
 
   const resetSongPage = () => {
     setSongs(new Set())
@@ -37,7 +38,10 @@ const SongSelect = () => {
     color: 'var(--warningColor)',
     tooltip: 'Include songs that probably have a wrong start time',
     defaultValue: true,
-    onClick: resetSongPage,
+    onClick: () => {
+      resetSongPage()
+      hasVideo.setValue(true)
+    },
   })
 
   const hasVideo = useCheckBox({
@@ -51,9 +55,16 @@ const SongSelect = () => {
     },
   })
 
+  const favoritedIds = showFavorited ? getItem('favoritesongs') : undefined
   const [result] = useQuery({
     query: SongsQuery,
-    variables: { searchString, hasVideo: hasVideo.value, hasRightGap: hasRightGap.value, page },
+    variables: {
+      searchString,
+      hasVideo: hasVideo.value,
+      hasRightGap: hasRightGap.value,
+      page,
+      favoritedIds,
+    },
   })
 
   const { data, error } = result
@@ -119,9 +130,14 @@ const SongSelect = () => {
     }
   )
 
+  const handleShowFavorited = () => {
+    setShowFavorited(!showFavorited)
+    resetSongPage()
+  }
+
   return (
     <div className="centerX">
-      <div className="songSelectContainer">
+      <div className="SongSelectPageContainer">
         <div>
           <div className="searchOptions">
             {search.field}
@@ -157,4 +173,4 @@ const SongSelect = () => {
   )
 }
 
-export default SongSelect
+export default SongSelectPage

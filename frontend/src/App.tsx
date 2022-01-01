@@ -26,7 +26,7 @@ const App = () => {
             <KaraokePage />
           </Route>
           <Route path="/tweak/:id">
-            <SongTweak />
+            <SongTweakPage />
           </Route>
           <Route path="/songs">
             {header}
