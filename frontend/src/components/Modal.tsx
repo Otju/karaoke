@@ -1,7 +1,7 @@
 interface props {
   children: any
   isVisible: boolean
-  setInvisible: (event: React.MouseEvent<HTMLElement>) => void
+  setInvisible: () => void
 }
 
 const Modal = ({ children, setInvisible, isVisible }: props) => {

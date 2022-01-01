@@ -54,6 +54,8 @@ export interface Tuner {
   isEnabled?: boolean
 }
 
+export type ColorClass = '' | 'warningColor' | 'dangerColor'
+
 export interface Song {
   _id: number
   title: string
