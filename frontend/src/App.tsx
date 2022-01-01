@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom'
-import SongSelect from './components/SongSelect'
+import SongSelectPage from './components/SongSelectPage'
 import KaraokePage from './components/KaraokePage'
-import SongTweak from './components/SongTweak'
+import SongTweakPage from './components/SongTweakPage'
 import LandingPage from './components/LandingPage'
 import FavoritePage from './components/FavoritePage'
 
@@ -30,7 +30,7 @@ const App = () => {
           </Route>
           <Route path="/songs">
             {header}
-            <SongSelect />
+            <SongSelectPage />
           </Route>
           <Route path="/favorites">
             {header}

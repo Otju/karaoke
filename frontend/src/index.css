@@ -167,32 +167,27 @@ li {
   text-align: left;
 }
 
-.songInfoControls {
-  visibility: hidden;
+.songPlayWrapper {
   position: absolute;
-  top: 25%;
-  right: 10%;
+  top: 30%;
+  right: 28%;
   z-index: 100;
 }
-.songInfo:hover .songInfoControls {
+
+.visibleOnSongInfoHover {
+  visibility: hidden;
+}
+
+.songInfo:hover .visibleOnSongInfoHover {
   visibility: visible;
 }
 
 .songInfoButton {
-  color: black;
-  background-color: white;
-  border-radius: 50%;
-  width: 45px;
-  height: 45px;
-  margin-left: 10px;
+  z-index: 500;
 }
 
 .songInfoButton:hover {
   filter: brightness(0.5);
-}
-
-.songInfoButtonIcon {
-  margin-top: 7px;
 }
 
 .songName {
@@ -203,6 +198,7 @@ li {
   display: flex;
   align-items: center;
   margin: 0px 10px;
+  width: 40px;
 }
 
 .coverPicture {

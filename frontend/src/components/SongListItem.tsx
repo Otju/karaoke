@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ColorClass } from '../types/types'
 import Modal from './Modal'
 import { addOneItem, itemExists, removeOneItem } from '../utils/localStorage'
-import { AiFillHeart, AiFillPlayCircle } from 'react-icons/ai'
+import { FaHeart, FaPlayCircle, FaRegHeart } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 
 interface props {
@@ -46,6 +46,12 @@ const SongListItem = ({
     removeOneItem('favoritesongs', _id)
   }
 
+  const handleFavorite = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation()
+    if (isFavorited) removeFavorite()
+    else addFavorite()
+  }
+
   const modalContent = (
     <div className="songModal">
       <img src={bigImage} alt="Missing cover" height={300} width={300}></img>
@@ -58,18 +64,18 @@ const SongListItem = ({
           {genres ? genres.map((genre, i) => (i !== genres.length - 1 ? `${genre}, ` : genre)) : ''}
         </p>
       </div>
-      <div onClick={() => (isFavorited ? removeFavorite() : addFavorite())} className="clickable">
-        {<AiFillHeart color={isFavorited ? 'red' : ''} size={50} />}
+      <div onClick={handleFavorite} className="clickable">
+        {isFavorited ? <FaHeart color="red" size={50} /> : <FaRegHeart size={50} />}
       </div>
       <Link to={`song/${_id}`} key={_id} className="clickable">
-        <AiFillPlayCircle size={50} />
+        <FaPlayCircle size={50} />
       </Link>
     </div>
   )
 
   return (
     <>
-      <li className={`songListItem ${colorClass}`} onClick={() => seIsVisible(true)}>
+      <li className="songListItem" onClick={() => seIsVisible(true)}>
         <img
           src={smallImage || '/missingCover.png'}
           alt="Missing cover"
@@ -78,12 +84,24 @@ const SongListItem = ({
           width={100}
         ></img>
         <div className="songInfo">
-          <div className="songName">
+          <div className={`songName ${colorClass}`}>
             <p>{artist}</p>
             <p>{title}</p>
           </div>
-          <div className="songIcon">{icon}</div>
-          {isFavorited && <div className="songIcon">{<AiFillHeart color="red" size={30} />}</div>}
+          <div className="songPlayWrapper visibleOnSongInfoHover">
+            <Link to={`song/${_id.toString()}`}>
+              <FaPlayCircle size={40} className="songPlayIcon songInfoButton" color="white" />
+            </Link>
+          </div>
+          {
+            <div
+              className={`songIcon songInfoButton ${isFavorited || 'visibleOnSongInfoHover'}`}
+              onClick={handleFavorite}
+            >
+              {isFavorited ? <FaHeart color="red" size={40} /> : <FaRegHeart size={40} />}
+            </div>
+          }
+          <div className={`songIcon ${colorClass}`}>{icon}</div>
         </div>
       </li>
       <Modal setInvisible={setInvisible} isVisible={isVisible} children={modalContent}></Modal>

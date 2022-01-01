@@ -345,7 +345,7 @@ const Canvas = ({
         </div>
         {!lyricPlayMode && (
           <>
-            <Link to="/" className="leftSide firstTop">
+            <Link to="/songs" className="leftSide firstTop">
               <button
                 className="bigButton"
                 onMouseEnter={() => setMouseOnButton(true)}
