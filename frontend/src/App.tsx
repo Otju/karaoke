@@ -7,8 +7,8 @@ import FavoritePage from './components/FavoritePage'
 
 const App = () => {
   const header = (
-    <div>
-      <h1>Karaoke!</h1>
+    <div style={{ marginBottom: 20 }}>
+      <h1 style={{ marginTop: 0 }}>Karaoke!</h1>
       <Link to="/songs" style={{ margin: 20 }}>
         Songs
       </Link>

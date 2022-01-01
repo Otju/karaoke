@@ -1,4 +1,4 @@
-type LocalStorageName = 'microphones' | 'favoritesongs'
+export type LocalStorageName = 'microphones' | 'favoritesongs' | 'allowAutoplay'
 
 export const setItem = (name: LocalStorageName, item: any) => {
   localStorage.setItem(name, JSON.stringify(item))

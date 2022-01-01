@@ -132,15 +132,20 @@ li {
   flex-grow: 1;
 }
 
-.songModal {
-  display: flex;
-  flex-direction: row;
+.songModalInfo {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  color: white;
+  font-weight: bold;
+  font-size: 20px;
+  width: 240px;
+  height: 240px;
+  padding: 30px;
 }
 
-.songModalInfo {
-  padding: 0px 20px;
-  margin-top: 5px;
-  font-size: 20px;
+.imageTextBackground {
+  background: linear-gradient(0deg, #00000088 50%, #ffffff44 100%);
 }
 
 .clickable {
@@ -167,27 +172,12 @@ li {
   text-align: left;
 }
 
-.songPlayWrapper {
-  position: absolute;
-  top: 30%;
-  right: 28%;
-  z-index: 100;
-}
-
 .visibleOnSongInfoHover {
   visibility: hidden;
 }
 
 .songInfo:hover .visibleOnSongInfoHover {
   visibility: visible;
-}
-
-.songInfoButton {
-  z-index: 500;
-}
-
-.songInfoButton:hover {
-  filter: brightness(0.5);
 }
 
 .songName {
@@ -254,7 +244,6 @@ li {
   display: flex;
   justify-content: center;
 }
-
 .songSelectContainer {
   width: 70%;
 }
@@ -303,6 +292,13 @@ input:focus {
 
 .invisibleButton {
   background: none;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
 }
 
 .searchOptions {
@@ -401,6 +397,10 @@ select {
   margin: 20px;
 }
 
+.rightMargin {
+  margin-right: 20px;
+}
+
 .settingsPage {
   display: flex;
   flex-direction: row;
@@ -488,4 +488,98 @@ input:checked + .slider:before {
   -webkit-transform: translateX(26px);
   -ms-transform: translateX(26px);
   transform: translateX(26px);
+}
+
+.coverContainer {
+  position: relative;
+  height: 350px;
+  width: 1000px;
+}
+
+.currentCover {
+  position: absolute;
+  height: 300px;
+  width: 300px;
+  top: 0px;
+  left: 350px;
+  box-shadow: 0px 20px 10px var(--primaryColor);
+}
+
+.leftCover {
+  position: absolute;
+  height: 200px;
+  width: 200px;
+  box-shadow: 0px 10px 10px var(--primaryColor);
+  top: 50px;
+  left: 100px;
+}
+
+.toLeftCover {
+  animation-name: toLeftCover;
+  animation-duration: 1s;
+  z-index: 200;
+}
+
+.toRightCover {
+  animation-name: toRightCover;
+  animation-duration: 1s;
+  z-index: 200;
+}
+
+.toCentralCoverFromLeft {
+  animation-name: toLeftCover;
+  animation-duration: 1s;
+  animation-direction: reverse;
+  z-index: 200;
+}
+
+.toCentralCoverFromRight {
+  animation-name: toRightCover;
+  animation-duration: 1s;
+  animation-direction: reverse;
+  z-index: 200;
+}
+
+.rightCover {
+  position: absolute;
+  height: 200px;
+  width: 200px;
+  box-shadow: 0px 10px 10px var(--primaryColor);
+  top: 50px;
+  left: 700px;
+}
+
+@keyframes toLeftCover {
+  from {
+    height: 300px;
+    width: 300px;
+    top: 0px;
+    left: 350px;
+    box-shadow: 0px 20px 10px var(--primaryColor);
+  }
+  to {
+    position: absolute;
+    height: 200px;
+    width: 200px;
+    box-shadow: 0px 10px 10px var(--primaryColor);
+    top: 50px;
+    left: 100px;
+  }
+}
+
+@keyframes toRightCover {
+  from {
+    height: 300px;
+    width: 300px;
+    top: 0px;
+    left: 350px;
+    box-shadow: 0px 20px 10px var(--primaryColor);
+  }
+  to {
+    height: 200px;
+    width: 200px;
+    box-shadow: 0px 10px 10px var(--primaryColor);
+    top: 50px;
+    left: 700px;
+  }
 }

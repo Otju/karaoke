@@ -4,6 +4,7 @@ import Modal from './Modal'
 import { addOneItem, itemExists, removeOneItem } from '../utils/localStorage'
 import { FaHeart, FaPlayCircle, FaRegHeart } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
+import useYoutube from '../hooks/useYoutube'
 
 interface props {
   colorClass: ColorClass
@@ -16,6 +17,7 @@ interface props {
   genres: string[] | undefined
   year: number | undefined
   _id: number
+  videoId: string | undefined
 }
 
 const SongListItem = ({
@@ -29,6 +31,7 @@ const SongListItem = ({
   genres,
   year,
   _id,
+  videoId,
 }: props) => {
   const [isVisible, seIsVisible] = useState(false)
   const [isFavorited, setIsFavorited] = useState(itemExists('favoritesongs', _id))
@@ -52,10 +55,23 @@ const SongListItem = ({
     else addFavorite()
   }
 
+  const { YTPlayer } = useYoutube(videoId)
+
   const modalContent = (
-    <div className="songModal">
-      <img src={bigImage} alt="Missing cover" height={300} width={300}></img>
-      <div className="songModalInfo">
+    <div className="row relative">
+      <div className="column rightMargin">
+        <img src={bigImage} alt="Missing cover" height={300} width={300}></img>
+        <div className="row centerX">
+          <div onClick={handleFavorite} className="clickable margins">
+            {isFavorited ? <FaHeart color="red" size={50} /> : <FaRegHeart size={50} />}
+          </div>
+          <Link to={`song/${_id}`} key={_id} className="clickable margins">
+            <FaPlayCircle size={50} />
+          </Link>
+        </div>
+      </div>
+      <div style={{ marginBottom: 5 }}>{YTPlayer}</div>
+      <div className="songModalInfo imageTextBackground">
         {artist}
         <p>{title}</p>
         <p>{language}</p>
@@ -64,12 +80,6 @@ const SongListItem = ({
           {genres ? genres.map((genre, i) => (i !== genres.length - 1 ? `${genre}, ` : genre)) : ''}
         </p>
       </div>
-      <div onClick={handleFavorite} className="clickable">
-        {isFavorited ? <FaHeart color="red" size={50} /> : <FaRegHeart size={50} />}
-      </div>
-      <Link to={`song/${_id}`} key={_id} className="clickable">
-        <FaPlayCircle size={50} />
-      </Link>
     </div>
   )
 
@@ -88,20 +98,22 @@ const SongListItem = ({
             <p>{artist}</p>
             <p>{title}</p>
           </div>
-          <div className="songPlayWrapper visibleOnSongInfoHover">
+          <div className={`songIcon ${colorClass}`}>{icon}</div>
+          <div
+            className={`songIcon songInfoButton ${isFavorited || 'visibleOnSongInfoHover'}`}
+            onClick={handleFavorite}
+          >
+            {isFavorited ? (
+              <FaHeart color="red" size={40} className="clickable" />
+            ) : (
+              <FaRegHeart size={40} className="clickable" />
+            )}
+          </div>
+          <div className="songIcon visibleOnSongInfoHover">
             <Link to={`song/${_id.toString()}`}>
-              <FaPlayCircle size={40} className="songPlayIcon songInfoButton" color="white" />
+              <FaPlayCircle size={40} className="clickable" color="white" />
             </Link>
           </div>
-          {
-            <div
-              className={`songIcon songInfoButton ${isFavorited || 'visibleOnSongInfoHover'}`}
-              onClick={handleFavorite}
-            >
-              {isFavorited ? <FaHeart color="red" size={40} /> : <FaRegHeart size={40} />}
-            </div>
-          }
-          <div className={`songIcon ${colorClass}`}>{icon}</div>
         </div>
       </li>
       <Modal setInvisible={setInvisible} isVisible={isVisible} children={modalContent}></Modal>

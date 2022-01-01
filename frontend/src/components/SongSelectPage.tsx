@@ -34,7 +34,7 @@ const SongSelectPage = () => {
   const hasRightGap = useCheckBox({
     Icon: AiFillHourglass,
     color: 'var(--warningColor)',
-    tooltip: 'Include songs that probably have a wrong start time',
+    tooltip: 'Include songs that mignt not be synced correctly',
     defaultValue: false,
     onClick: () => {
       resetSongPage()
@@ -101,7 +101,7 @@ const SongSelectPage = () => {
         icon = (
           <CrossedIcon
             Icon={AiFillHourglass}
-            tooltip="Video probably not synced with lyrics"
+            tooltip="Video might not be synced with lyrics"
             size={40}
           />
         )
@@ -119,6 +119,7 @@ const SongSelectPage = () => {
           language={language}
           year={year}
           genres={genres}
+          videoId={videoId}
         />
       )
       if (isEven) {

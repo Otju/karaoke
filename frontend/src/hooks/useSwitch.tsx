@@ -1,17 +1,17 @@
-import { useState } from 'react'
+import { getItem, LocalStorageName, setItem } from '../utils/localStorage'
 
-const useSwitch = () => {
-  const [value, setValue] = useState<boolean>(false)
+const useSwitch = (localStorage: LocalStorageName) => {
   const handleClick = () => {
-    setValue(!value)
+    const value = getItem(localStorage)
+    setItem(localStorage, !value)
   }
   const field = (
     <label className="switch">
-      <input type="checkbox" onClick={handleClick} />
+      <input type="checkbox" onClick={handleClick} defaultChecked={getItem(localStorage)} />
       <span className="slider"></span>
     </label>
   )
-  return { value, setValue, field }
+  return { getValue: () => getItem(localStorage), field }
 }
 
 export default useSwitch
