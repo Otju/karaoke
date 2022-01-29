@@ -11,6 +11,7 @@ import {
 import { Song, ScoreInfo, SungNote, Tuner, Settings } from '../types/types'
 import drawPitch from '../utils/drawPitch'
 import { Link } from 'react-router-dom'
+import EndScreen from './EndScreen'
 
 interface props {
   songInfo: Song
@@ -54,8 +55,17 @@ const Canvas = ({
       }
     })
   })
+  const lastBeat = songInfo.notePages[songInfo.notePages.length - 1].endBeat
+  const songAlmostEnd = currentBeat > lastBeat
+  const songEnd = currentBeat > lastBeat + 100
   const maxScore = 10000
   const scorePerNote = maxScore / totalnoteLength
+
+  let volume = 100
+  if (songAlmostEnd && player) {
+    volume = 100 - Math.round(currentBeat - lastBeat)
+    player.setVolume(volume)
+  }
 
   const [scoreInfo, setScoreInfo] = useState<ScoreInfo[]>(
     [...Array(4)].map(() => ({
@@ -175,15 +185,19 @@ const Canvas = ({
       } else {
         setTimedSungNotes((players) =>
           players.map((notes, i) => {
-            if (tuners[i]) {
-              const name = tuners[i].noteName
-              return [...notes, { name, beat: newCurrentBeat }]
+            const difficulty = settings.playerSettings[i].difficulty
+            if (difficulty === 'Auto-Play') {
+              return [...notes, { name: 'A', beat: newCurrentBeat }]
+            } else {
+              if (tuners[i]) {
+                const name = tuners[i].noteName
+                return [...notes, { name, beat: newCurrentBeat }]
+              }
             }
             return notes
           })
         )
       }
-
       setAnimationId(requestAnimationFrame((callback) => render(callback, startTime)))
     }
   }
@@ -267,62 +281,70 @@ const Canvas = ({
       return ['Dude, really?', 'red']
     }
   }
+
+  if (songEnd && !stopped) {
+    handlePause()
+  }
+
   return (
     <div className="canvasContainer" onMouseMove={handleMouseMove}>
-      <div
-        style={{
-          pointerEvents: 'none',
-          visibility: stopped ? 'hidden' : 'visible',
-        }}
-      >
-        <YouTube
-          videoId={videoId}
-          onReady={handleReady}
-          opts={{
-            height: height.toString(),
-            width: width.toString(),
-            playerVars: {
-              controls: 0,
-              disablekb: 1,
-              iv_load_policy: 3,
-              modestbranding: 1,
-              showinfo: 0,
-              rel: 0,
-            },
+      {songEnd && <EndScreen />}
+      <div style={{ opacity: volume / 100.0 }}>
+        <div
+          style={{
+            pointerEvents: 'none',
+            visibility: stopped ? 'hidden' : 'visible',
           }}
-          onPlay={start}
-          onPause={stop}
-          className="fullSizeYtPlayer"
-        />
-      </div>
-      {stopped ? (
-        <div className="absCenter pauseBackground">
-          <IoPauseSharp size={70} className="videoPauseLogo" key={pauseTime} />
+        >
+          <YouTube
+            videoId={videoId}
+            onReady={handleReady}
+            opts={{
+              height: height.toString(),
+              width: width.toString(),
+              playerVars: {
+                controls: 0,
+                disablekb: 1,
+                iv_load_policy: 3,
+                modestbranding: 1,
+                showinfo: 0,
+                rel: 0,
+              },
+            }}
+            onPlay={start}
+            onPause={stop}
+            className="fullSizeYtPlayer"
+          />
         </div>
-      ) : (
-        <div className="absCenter">
-          <IoPlaySharp size={70} className="videoPauseLogo" key={pauseTime} />
-        </div>
-      )}
-      {marginsForPlayers.map(({ noteTopMargin, height, color }, i) => {
-        const { percentageOnPage, score, missedNotes, hitNotes } = scoreInfo[i]
-        const scoreText = getScoreText(percentageOnPage)
-        return (
-          <div
-            className="scoreBox"
-            style={{ top: noteTopMargin + height * 0.16 }}
-            key={`Margin${i}`}
-          >
-            <span style={{ color }}>{score.toFixed(0)}</span>
-            <div className="percentageScore" key={missedNotes + hitNotes}>
-              {scoreText && <b style={{ color: scoreText[1] }}>{scoreText[0]}</b>}
-            </div>
+        {stopped ? (
+          <div className="absCenter pauseBackground">
+            <IoPauseSharp size={70} className="videoPauseLogo" key={pauseTime} />
           </div>
-        )
-      })}
+        ) : (
+          <div className="absCenter">
+            <IoPlaySharp size={70} className="videoPauseLogo" key={pauseTime} />
+          </div>
+        )}
+        {marginsForPlayers.map(({ noteTopMargin, height, color }, i) => {
+          const { percentageOnPage, score, missedNotes, hitNotes } = scoreInfo[i]
+          const scoreText = getScoreText(percentageOnPage)
+          return (
+            <div
+              className="scoreBox"
+              style={{ top: noteTopMargin + height * 0.16 }}
+              key={`Margin${i}`}
+            >
+              <span style={{ color }}>{score.toFixed(0)}</span>
+              <div className="percentageScore" key={missedNotes + hitNotes}>
+                {scoreText && <b style={{ color: scoreText[1] }}>{scoreText[0]}</b>}
+              </div>
+            </div>
+          )
+        })}
+      </div>
       <div className={buttonsAreHidden ? 'fadeOut' : 'fadeIn'}>
         <div className="playControls">
-          {player && !lyricPlayMode && (
+          {player && !lyricPlayMode && !songEnd && (
             <>
               <button
                 className="bigButton"

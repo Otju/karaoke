@@ -5,8 +5,8 @@ const parseNotes = require('./parseNotes')
 const fs = require('fs')
 const cliProgress = require('cli-progress')
 const getDiscogsInfo = require('./getDiscogsInfo')
-
-const { saveSongToDB } = require('./saveToDB')
+const { performance } = require('perf_hooks')
+const { title } = require('process')
 
 const toBoolean = (string) => {
   if (string && typeof string === 'string' && string.toLowerCase === 'yes') {
@@ -17,37 +17,6 @@ const toBoolean = (string) => {
 }
 
 const phpsessid = `PHPSESSID=${process.env.PHPSESSID}`
-
-const getYoutubeVideoId = async (artist, title) => {
-  try {
-    const parameters = [
-      ['key', process.env.YT_API_KEY],
-      ['maxResults', 5],
-      ['type', 'video'],
-      ['videoEmbeddable', true],
-      ['q', `${artist} ${title} official music video`],
-    ]
-    const parameterString = parameters
-      .map(([key, value]) => {
-        if (key === 'q') {
-          value = value.replace(/\W+/g, '+')
-        }
-        return `${key}=${value}`
-      })
-      .join('&')
-    const url = `https://www.googleapis.com/youtube/v3/search?${parameterString}`
-    const res = await fetch(url)
-    const data = await res.json()
-    const videoIds = data.items.map((item) => item.id.videoId)
-    const videoId = videoIds[0]
-    videoIds.shift()
-    const alternativeVideoIds = videoIds
-    return { videoId, alternativeVideoIds }
-  } catch (e) {
-    console.error(e)
-    return {}
-  }
-}
 
 const getMainInfo = async (i) => {
   try {
@@ -64,6 +33,10 @@ const getMainInfo = async (i) => {
     const page = await res.text()
     const $ = cheerio.load(page)
     const rawInfo = $('textarea[name=txt]').val()
+    if (!rawInfo) {
+      console.error('No raw info')
+      return null
+    }
     const info = parseNotes(rawInfo)
     return info
   } catch (e) {
@@ -71,6 +44,9 @@ const getMainInfo = async (i) => {
     return null
   }
 }
+
+const youtubeIdRegex =
+  /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i
 
 const getAdditionalInfo = async (i) => {
   const info = {}
@@ -82,6 +58,8 @@ const getAdditionalInfo = async (i) => {
   })
   const page = await res.text()
   const $ = cheerio.load(page)
+  let videoIdFromComments
+  let gapFromComments
   $('.list_tr2, .list_tr1').each((_, row) => {
     let key
     let value
@@ -108,6 +86,29 @@ const getAdditionalInfo = async (i) => {
             info.rating = rating
           }
         }
+        let isVideoInThisComment = false
+        const gapRegex = /GAP\D*(\d+[.,]?\d+)/i
+        $(cell)
+          .find('center > object > embed')
+          .each((_, s) => {
+            const rawId = $(s).attr('src')
+            const match = rawId.match(youtubeIdRegex)
+            const id = match && match[1]
+            if (id) {
+              isVideoInThisComment = true
+              if (!videoIdFromComments) {
+                videoIdFromComments = id
+                const match = $(cell).text().match(gapRegex)
+                if (match) {
+                  gapFromComments = Number(match[1])
+                }
+              }
+            }
+          })
+        const match = $(cell).text().match(gapRegex)
+        if (match && !gapFromComments && !isVideoInThisComment) {
+          gapFromComments = Number(match[1])
+        }
       })
     switch (key) {
       case 'Golden Notes':
@@ -131,29 +132,79 @@ const getAdditionalInfo = async (i) => {
         break
     }
   })
-  return info
+  return { additionalInfo: info, videoIdFromComments, gapFromComments }
+}
+
+const getVideoIdFromNewUSDB = ({ artist, title, createdBy, language }) => {
+  const newUSDBData = JSON.parse(fs.readFileSync(`./newUSDBData.json`))
+  let matches = newUSDBData.filter((info) => info.title === title && artist === info.artist)
+  if (matches.length === 0) {
+    return { videoIdFromNewUSDB: null, gapFromNewUSDB: null }
+  }
+  if (matches.length > 1) {
+    const newMatches = newUSDBData.filter((info) => info.language === language)
+    if (newMatches.length > 0) {
+      matches = newMatches
+    }
+  }
+  if (matches.length > 1) {
+    const newMatches = newUSDBData.filter((info) => info.createdBy === createdBy)
+    if (newMatches.length > 0) {
+      matches = newMatches
+    }
+  }
+  const { videoId, gap } = matches[0]
+  return { videoIdFromNewUSDB: videoId, gapFromNewUSDB: gap }
 }
 
 const main = async () => {
   const infos = []
   const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
   let ids = JSON.parse(fs.readFileSync('./data/ids.json'))
-  const doneIds = JSON.parse(fs.readFileSync(`./data/doneIds.json`))
-  const start = doneIds.length
-  const count = 100
+  const oldSongs = JSON.parse(fs.readFileSync('./data/songs.json'))
+  const start = oldSongs.length
+  const count = 2000
   ids = ids.slice(start, start + count)
   bar.start(count, 0)
-  let succesfulCount = 0
-  const newDoneIDs = []
   for (const id of ids) {
     try {
       bar.increment()
+      //const startTime = performance.now()
       let success = false
       const mainInfo = await getMainInfo(id)
+      //const mainInfoTime = performance.now()
       if (!mainInfo) return
-      const additionalInfo = await getAdditionalInfo(id)
-      const discogsInfo = await getDiscogsInfo({ artist: mainInfo.artist, title: mainInfo.title })
+      const { additionalInfo, videoIdFromComments, gapFromComments } = await getAdditionalInfo(id)
+      //const additionalInfoTime = performance.now()
+      const { videoIdFromNewUSDB, gapFromNewUSDB } = getVideoIdFromNewUSDB({
+        artist: mainInfo.artist,
+        title: mainInfo.title,
+        createdBy: additionalInfo.createdBy,
+        language: mainInfo.language,
+      })
+      //const USDBtime = performance.now()
+      let videoIdSource = 'discogs'
+      const discogsInfo = await getDiscogsInfo({
+        artist: mainInfo.artist,
+        title: mainInfo.title,
+      })
+      //const discogsTime = performance.now()
       let { genres, year, videoUrls, ...otherDiscogsInfo } = discogsInfo
+      if (!videoUrls) {
+        videoUrls = []
+      }
+      if (videoIdFromComments) {
+        if (gapFromComments) {
+          mainInfo.gap = gapFromComments
+        }
+        videoUrls.unshift(videoIdFromComments)
+        videoIdSource = 'comments'
+      }
+      if (videoIdFromNewUSDB && gapFromNewUSDB) {
+        mainInfo.gap = gapFromNewUSDB
+        videoUrls.unshift(videoIdFromNewUSDB)
+        videoIdSource = 'newusdb'
+      }
       let videoId = ''
       let alternativeVideoIds = []
       const { genre } = mainInfo
@@ -167,63 +218,53 @@ const main = async () => {
         year = mainInfo.year
       }
       if (videoUrls && videoUrls.length !== 0) {
-        const videoIDs = videoUrls
-          .map((url) => {
-            const idMatch = url.match(
-              /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i
-            )
-            if (idMatch && idMatch[1]) {
-              return idMatch[1]
-            }
-            return null
-          })
-          .filter((item) => item)
-        videoId = videoIDs[0]
-        if (videoIDs.length > 1) {
-          videoIDs.shift()
-          alternativeVideoIds = videoIDs
+        videoId = videoUrls[0]
+        if (videoUrls.length > 1) {
+          videoUrls.shift()
+          alternativeVideoIds = videoUrls
         }
       }
-      if (!videoId) {
-        const youtubeInfo = await getYoutubeVideoId(mainInfo.artist, mainInfo.title)
-        videoId = youtubeInfo.videoId
-        alternativeVideoIds = youtubeInfo.alternativeVideoIds
-      }
+      const gapIsAutoGenerated = videoIdSource !== 'comments' && videoIdSource !== 'newusdb'
       const info = {
         ...mainInfo,
         ...additionalInfo,
-        gapIsAutoGenerated: true,
+        gapIsAutoGenerated,
         genres,
         year,
         videoId,
         alternativeVideoIds,
         ...otherDiscogsInfo,
+        usdbId: id,
+        videoIdSource,
       }
-      const hasVideo = Boolean(videoId)
       infos.push(info)
-      const res = await saveSongToDB(info)
-      if (res.errors) {
-        console.log(res.errors)
+      /*
+      const fullTime = performance.now()
+      const time1 = mainInfoTime - startTime
+      const time2 = additionalInfoTime - mainInfoTime
+      const time3 = USDBtime - additionalInfoTime
+      const time4 = discogsTime - USDBtime
+      const time5 = fullTime - startTime
+      const timesToLog = {
+        main: ' ' + (time1 / 1000.0).toFixed(1),
+        additional: (time2 / 1000.0).toFixed(1),
+        usdb: (time3 / 1000.0).toFixed(1),
+        discogs: (time4 / 1000.0).toFixed(1),
+        full: (time5 / 1000.0).toFixed(1),
       }
-      if (res.data) {
-        succesfulCount++
-        success = true
-      }
-      newDoneIDs.push({ id, success, hasVideo })
+      console.log(timesToLog)
+      */
     } catch (e) {
       console.error(e)
-      newDoneIDs.push({ id, success: false, hasVideo: false })
+      infos.push({ id })
+      console.log('FAILED', id)
     }
   }
   bar.stop()
-  const d = new Date()
-  const date = `${d.getDate()}-${d.getMonth()}-${d.getFullYear()}`
-  console.log('Saved', succesfulCount, 'of', ids.length, 'songs to DB')
   console.log('Writing to file...')
-  fs.writeFileSync(`./data/songs-${date}.json`, JSON.stringify(infos))
+  fs.writeFileSync(`./data/backup/songs_${start}-${start + count}.json`, JSON.stringify(infos))
+  fs.writeFileSync(`./data/songs.json`, JSON.stringify([...oldSongs, ...infos]))
   console.log('Done')
-  const combined = [...doneIds, ...newDoneIDs]
-  fs.writeFileSync(`./data/doneIds.json`, JSON.stringify(combined))
 }
 
 module.exports = main

@@ -353,7 +353,7 @@ input:focus {
 }
 
 .scrollDiv {
-  border-radius: 5px;
+  min-height: 100vh;
 }
 
 .pauseBackground {
@@ -582,4 +582,10 @@ input:checked + .slider:before {
     top: 50px;
     left: 700px;
   }
+}
+
+.endScreen {
+  position: fixed;
+  height: 100vh;
+  width: 100vw;
 }

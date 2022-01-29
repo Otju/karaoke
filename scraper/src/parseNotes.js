@@ -26,7 +26,7 @@ const parseNotes = (text) => {
     }
   })
 
-  songInfo.language = songInfo.language ||"English"
+  songInfo.language = songInfo.language || 'English'
 
   const notePages = []
   let currentNotes = []
