@@ -1,36 +1,22 @@
 import { useEffect, useRef } from 'react'
 import { ScoreInfo } from '../types/types'
-import { roundRect } from '../utils/canvasHelpers'
+import getScoreText from '../utils/getScoreText'
 
 interface props {
   scoreInfo?: ScoreInfo[]
 }
 
-function randomIntFromInterval(min: number, max: number) {
-  // min and max included
-  return Math.floor(Math.random() * (max - min + 1) + min)
-}
-
 const EndScreen = ({ scoreInfo }: props) => {
   const canvasRef = useRef(null)
 
-  if (!scoreInfo) {
-    scoreInfo = [...Array(4)].map(() => ({
-      score: randomIntFromInterval(50, 1000),
-      hitNotes: 5,
-      missedNotes: 100,
-      scorePerNote: 500,
-      calculatedNotePageIndexes: [],
-    }))
-  }
-
   useEffect(() => {
     const ratings = {
-      Perfect: 1,
-      Great: 0.8,
-      Good: 0.6,
-      Decent: 0.4,
-      'Not that bad': 0.2,
+      '10 000': 1,
+      '8 000': 0.8,
+      '6 000': 0.6,
+      '4 000': 0.4,
+      '2 000': 0.2,
+      '0': 0,
     }
     const render = () => {
       const canvas = canvasRef.current
@@ -42,29 +28,79 @@ const EndScreen = ({ scoreInfo }: props) => {
         ctx.fillStyle = 'grey' //'rgba(210, 210, 210, 0.1)'
         ctx.strokeStyle = 'grey' //'rgba(210, 210, 210, 0.1)'
         ctx.font = '20px Arial'
-        const maxHeight = 350
         Object.entries(ratings).forEach(([name, value]: [string, number]) => {
           const y = 50 + 300 * (1 - value)
           ctx.rect(200, y, 600, 5)
           ctx.fill()
-          ctx.fillText(name, 20, y + 6)
+          ctx.fillText(name, 100, y + 6)
         })
-        ctx.rect(200, 0, 600, 350)
+        ctx.rect(200, 50, 600, 300)
         ctx.stroke()
-        ctx.fillStyle = 'red'
-        scoreInfo?.forEach(({ score }, i) => {
-          const height = score / 5
-          roundRect(ctx, 300 + i * 100, maxHeight - height, 50, height, 10, true, false)
-        })
       }
     }
-    requestAnimationFrame(() => render())
-  }, [scoreInfo])
+    render()
+  }, [])
+
+  let totalAnimationDelay = 3
 
   return (
     <div className="endScreen">
-      <h1>ENDSCREEN</h1>
       <div className="absCenter">
+        {scoreInfo?.map(({ score }, i) => {
+          const height = score / 32.25
+          const animationDuration = 2 + height / 200
+          const currentAnimationDelay = totalAnimationDelay - animationDuration
+          totalAnimationDelay += animationDuration + 3
+          const scoreText = getScoreText(score / 10000)
+          return (
+            <>
+              <div
+                style={{
+                  height: 80,
+                  position: 'absolute',
+                  right: -100,
+                  width: 200,
+                  top: 20 + i * 90,
+                  animationName: 'fadeInKeyFrames',
+                  animationDelay: `${currentAnimationDelay + animationDuration}s`,
+                  animationDuration: '3s',
+                  animationFillMode: 'forwards',
+                  opacity: '0%',
+                }}
+              >
+                Player {i + 1} <br />
+                Score: {score} <br />
+                {scoreText ? scoreText[0] : 'Error'}
+              </div>
+              <div
+                style={{
+                  height: height,
+                  position: 'absolute',
+                  left: 320 + i * 100,
+                  width: 50,
+                  bottom: 246,
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: -50,
+                    width: '100%',
+                  }}
+                >
+                  Player {i + 1}
+                </div>
+                <div
+                  className="fillVerticalInner"
+                  style={{
+                    animationDuration: `${animationDuration}s`,
+                    animationDelay: `${currentAnimationDelay}s`,
+                  }}
+                />
+              </div>
+            </>
+          )
+        })}
         <canvas ref={canvasRef} width={950} height={600} />
       </div>
     </div>

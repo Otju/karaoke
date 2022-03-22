@@ -12,6 +12,7 @@ import { Song, ScoreInfo, SungNote, Tuner, Settings } from '../types/types'
 import drawPitch from '../utils/drawPitch'
 import { Link } from 'react-router-dom'
 import EndScreen from './EndScreen'
+import getScoreText from '../utils/getScoreText'
 
 interface props {
   songInfo: Song
@@ -261,34 +262,13 @@ const Canvas = ({
 
   const buttonsAreHidden = !mouseOnButton && time - mouseLastMove > 2000
 
-  const getScoreText = (scorePercentage: number | undefined) => {
-    if (scorePercentage === undefined) {
-      return null
-    }
-    if (scorePercentage >= 0.9) {
-      return ['Perfect!', 'green']
-    } else if (scorePercentage >= 0.8) {
-      return ['Amazing!', 'green']
-    } else if (scorePercentage >= 0.7) {
-      return ['Great!', 'green']
-    } else if (scorePercentage >= 0.6) {
-      return ['Good', 'green']
-    } else if (scorePercentage >= 0.4) {
-      return ['Decent', 'yellow']
-    } else if (scorePercentage >= 0.2) {
-      return ['Not that bad', 'red']
-    } else {
-      return ['Dude, really?', 'red']
-    }
-  }
-
   if (songEnd && !stopped) {
     handlePause()
   }
 
   return (
     <div className="canvasContainer" onMouseMove={handleMouseMove}>
-      {songEnd && <EndScreen />}
+      {songEnd && <EndScreen scoreInfo={scoreInfo} />}
       <div style={{ opacity: volume / 100.0 }}>
         <div
           style={{
