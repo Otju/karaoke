@@ -17,7 +17,12 @@ const FavoritePage = () => {
   })
 
   useEffect(() => {
-    if (!result.fetching && !result.error && result.data) {
+    if (
+      !result.fetching &&
+      !result.error &&
+      result.data &&
+      result.data.getFavorites[currentSongIndex]
+    ) {
       setCurrentVideoId(result.data.getFavorites[currentSongIndex].videoId)
     }
   }, [result, currentSongIndex])
@@ -56,18 +61,18 @@ const FavoritePage = () => {
     handlePlay()
   }
 
-  const prevSong = songs[previousIndex(currentSongIndex)]
+  //const prevSong = songs[previousIndex(currentSongIndex)]
   const currentSong = songs[currentSongIndex]
-  const nextSong = songs[nextIndex(currentSongIndex)]
-  const prevPrevSong = songs[previousIndex(previousIndex(currentSongIndex))]
-  const nextNextSong = songs[nextIndex(nextIndex(currentSongIndex))]
+  //const nextSong = songs[nextIndex(currentSongIndex)]
+  // const prevPrevSong = songs[previousIndex(previousIndex(currentSongIndex))]
+  //const nextNextSong = songs[nextIndex(nextIndex(currentSongIndex))]
 
-  return (
+  return currentSong ? (
     <div>
       <div className="center">
         <div className="coverContainer">
           <img
-            src={prevSong.bigImage}
+            src={'/missingCover.png' /*prevSong.bigImage*/}
             alt="Album cover"
             className={`leftCover clickable ${movingDirection === 1 && 'toLeftCover'}`}
             onClick={handlePrev}
@@ -75,7 +80,7 @@ const FavoritePage = () => {
           />
           <Link to={`/song/${currentSong._id}`}>
             <img
-              src={currentSong.bigImage}
+              src={'missingCover.png' /*currentSong.bigImage*/}
               alt="Album cover"
               className={`currentCover clickable ${
                 movingDirection === 1 && 'toCentralCoverFromRight'
@@ -84,14 +89,18 @@ const FavoritePage = () => {
             />
           </Link>
           <img
-            src={nextSong.bigImage}
+            src={'/missingCover.png' /*nextSong.bigImage*/}
             alt="Album cover"
             className={`rightCover clickable ${movingDirection === -1 && 'toRightCover'}`}
             onClick={handleNext}
             key={`right${currentSongIndex}`}
           />
           <img
-            src={movingDirection === 1 ? prevPrevSong.bigImage : nextNextSong.bigImage}
+            src={
+              movingDirection === 1
+                ? '/missingCover.png' /*prevPrevSong.bigImage */
+                : '/missingCover.png' /* nextNextSong.bigImage*/
+            }
             alt="Album cover"
             className={movingDirection === 1 ? 'leftCover' : 'rightCover'}
             style={{ zIndex: -10 }}
@@ -104,6 +113,8 @@ const FavoritePage = () => {
       </h3>
       {YTPlayer}
     </div>
+  ) : (
+    <div>You don't have any favorited songs yet</div>
   )
 }
 

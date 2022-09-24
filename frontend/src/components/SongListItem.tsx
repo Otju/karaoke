@@ -22,11 +22,11 @@ interface props {
 
 const SongListItem = ({
   colorClass,
-  smallImage,
+  //  smallImage,
   artist,
   title,
   icon,
-  bigImage,
+  //bigImage,
   language,
   genres,
   year,
@@ -60,7 +60,12 @@ const SongListItem = ({
   const modalContent = (
     <div className="row relative">
       <div className="column rightMargin">
-        <img src={bigImage} alt="Missing cover" height={300} width={300}></img>
+        <img
+          src={'/missingCover.png' /*bigImage*/}
+          alt="Missing cover"
+          height={300}
+          width={300}
+        ></img>
         <div className="row centerX">
           <div onClick={handleFavorite} className="clickable margins">
             {isFavorited ? <FaHeart color="red" size={50} /> : <FaRegHeart size={50} />}
@@ -87,7 +92,7 @@ const SongListItem = ({
     <>
       <li className="songListItem" onClick={() => seIsVisible(true)}>
         <img
-          src={smallImage || '/missingCover.png'}
+          src={'/missingCover.png' /*smallImage || '/missingCover.png'*/}
           alt="Missing cover"
           className="coverPicture absCenterY"
           height={100}
