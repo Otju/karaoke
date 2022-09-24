@@ -1,15 +1,12 @@
-import 'reflect-metadata'
+import { config } from './config'
 import express from 'express'
 import { Application } from 'apollo-server-express/node_modules/@types/express-serve-static-core'
-import mongoose from 'mongoose'
-
 import loaders from './bootstrap/loaders'
-import { config } from './config'
-import serverless from 'serverless-http'
+import mongoose from 'mongoose'
 
 export const getServer = async () => {
   const app = express() as Application
-
+  //@ts-ignore
   const server = await loaders(app)
 
   server.applyMiddleware({
@@ -26,18 +23,8 @@ export const getServer = async () => {
   return app
 }
 
-let handler: Function
-
-module.exports.handler = async (event: any, context: any) => {
-  if (!handler) {
-    const app = await getServer()
-    handler = serverless(app, {
-      request: (request: any) => {
-        request.serverless = { event, context }
-      },
-    })
-  }
-
-  const res = await handler(event, context)
-  return res
-}
+getServer().then((app) =>
+  app.listen({ port: config.port }, () =>
+    console.log(`🚀 Server ready at http://localhost:${config.port}${config.graphqlPath}`)
+  )
+)

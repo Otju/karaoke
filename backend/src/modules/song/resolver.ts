@@ -25,6 +25,7 @@ interface Search {
 export default class SongResolver {
   @Query((returns) => Song)
   async getSong(@Arg('id') id: ObjectId) {
+    //@ts-ignore
     const song = await SongModel.findById(id).lean().exec()
     return song
   }
